@@ -38,8 +38,13 @@ class Settings(BaseSettings):
     ml_root: Path = ML_ROOT
     ml_artifact_path: Path = ML_ROOT / "artifacts" / "runpass_model.joblib"
 
-    # CORS for the future Next.js frontend.
-    cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    # CORS for the browser dashboard. 5173 is the Vite dev server; 3000 is kept
+    # for a future Next.js/Vercel frontend. Override in prod via
+    # ENGAGE8_CORS_ORIGINS (JSON list) with the deployed origin.
+    cors_origins: list[str] = [
+        "http://localhost:5173", "http://127.0.0.1:5173",
+        "http://localhost:3000", "http://127.0.0.1:3000",
+    ]
 
     @model_validator(mode="after")
     def _require_strong_secret_in_prod(self):

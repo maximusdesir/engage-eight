@@ -34,8 +34,10 @@ production.
 | GET/POST | `/plays` | yes | Filter/insert plays |
 | POST | `/predict` | no | Run/pass probability for a situation |
 | POST | `/recommend` | no | Predicted offense + ranked defensive calls |
-| GET | `/tendencies` | no | Tendency matrix by down/dist, zone, formation, hash |
-| POST | `/uploads` | yes | Upload a charting or Hudl CSV (max 5 MB) as plays. Form fields: `source` (auto\|charting\|hudl) and optional `team` to label offense_team |
+| GET | `/tendencies` | no (yes if `team_id` set) | Tendency matrix by down/dist, zone, formation, motion, quarter, hash. Passing `team_id` applies that team's formation/motion vocabulary mapping and requires auth + ownership of that team |
+| POST | `/uploads` | yes | Upload a charting or Hudl CSV (max 5 MB) as plays. Form fields: `source` (auto\|charting\|hudl) and optional `team` to label offense_team. Returns any unrecognized formation/motion names for mapping |
+| GET | `/teams/{id}/vocab` | yes | Canonical vocabulary, the team's mappings, and still-unmapped raw formation/motion values |
+| POST | `/teams/{id}/vocab` | yes | Upsert raw→canonical formation/motion mappings for the team |
 
 ## Layout
 

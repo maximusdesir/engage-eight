@@ -14,12 +14,14 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db.models import Play
+from app.services import vocab as vocab_service
 
 # Make the engage8 ml package importable. settings.ml_root points at ../ml.
 _ml_root = str(settings.ml_root)
 if _ml_root not in sys.path:
     sys.path.insert(0, _ml_root)
 
+from engage8 import vocab as ml_vocab  # noqa: E402
 from engage8.charting import load_charting  # noqa: E402
 from engage8.hudl import load_hudl, looks_like_hudl  # noqa: E402
 from engage8.tendencies import SPLITS, tendency_table  # noqa: E402
@@ -38,6 +40,7 @@ _TENDENCY_COLUMNS = (
     "explosive",
     "epa",
     "formation",
+    "motion_type",
 )
 
 # Play model columns we map across from a load_charting() canonical frame.
@@ -87,13 +90,18 @@ def _plays_to_frame(plays: list[Play]) -> pd.DataFrame:
 
 
 def get_tendencies(
-    db: Session, split: str = "down_distance", team: str | None = None
+    db: Session,
+    split: str = "down_distance",
+    team: str | None = None,
+    team_id: int | None = None,
 ) -> list[dict]:
     """Aggregate stored plays into a tendency table.
 
-    Filters to ``offense_team == team`` when a team is given. Raises
-    ``ValueError`` for an unknown split (the router maps that to a 400).
-    Returns an empty list when there are no matching plays.
+    Filters to ``offense_team == team`` when a team is given. When ``team_id`` is
+    given, that team's formation/motion vocabulary mapping is applied on read, so
+    naming variants collapse onto the canonical vocabulary. Raises ``ValueError``
+    for an unknown split (the router maps that to a 400). Returns an empty list
+    when there are no matching plays.
     """
     if split not in SPLITS:
         raise ValueError(
@@ -108,6 +116,16 @@ def get_tendencies(
         return []
 
     df = _plays_to_frame(plays)
+    if team_id is not None:
+        fmap, mmap = vocab_service.build_maps(db, team_id)
+        # Pre-fold raw values with the team's mapping; the split's own
+        # normalize pass (built-in vocab) is idempotent on canonical values.
+        df["formation"] = df["formation"].map(
+            lambda v: ml_vocab.normalize_formation(v, fmap)
+        )
+        df["motion_type"] = df["motion_type"].map(
+            lambda v: ml_vocab.normalize_motion(v, mmap)
+        )
     table = tendency_table(df, split)
     return table.to_dict(orient="records")
 
@@ -127,11 +145,32 @@ def _persist_canonical(db: Session, df, source: str) -> dict:
 
     teams = sorted({p.offense_team for p in plays if p.offense_team is not None})
     preview = tendency_table(df).head().to_dict(orient="records") if len(df) else []
+    # Raw formation/motion values the built-in vocab did not recognize, so the
+    # upload screen can prompt the coach to map them (built-in only; per-team
+    # mappings are resolved later on the Vocabulary screen).
+    unmapped = vocab_service.unmapped_values(db, team=None) if not teams else \
+        _union_unmapped(db, teams)
     return {
         "inserted": len(plays),
         "teams": teams,
         "source": source,
         "split_preview": preview,
+        "unmapped_formations": unmapped["formations"],
+        "unmapped_motions": unmapped["motions"],
+    }
+
+
+def _union_unmapped(db: Session, teams: list[str]) -> dict[str, list[str]]:
+    """Union unmapped formation/motion raws across the given offense teams."""
+    formations: list[str] = []
+    motions: list[str] = []
+    for team in teams:
+        u = vocab_service.unmapped_values(db, team=team)
+        formations.extend(u["formations"])
+        motions.extend(u["motions"])
+    return {
+        "formations": sorted(set(formations), key=str.upper),
+        "motions": sorted(set(motions), key=str.upper),
     }
 
 

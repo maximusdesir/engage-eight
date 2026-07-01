@@ -12,7 +12,7 @@ import argparse
 
 import pandas as pd
 
-from . import config
+from . import config, vocab
 
 
 def _dd_bucket(down: int, dist) -> str:
@@ -40,7 +40,12 @@ def _zone(yardline_100: int) -> str:
 SPLITS = {
     "down_distance": lambda df: df.apply(lambda r: _dd_bucket(r["down"], r["ydstogo"]), axis=1),
     "field_zone": lambda df: df["yardline_100"].apply(_zone),
-    "formation": lambda df: df["formation"].fillna("(unknown)"),
+    # Formation/motion are folded onto the canonical vocabulary so a team's
+    # naming variants ("Trips Rt" / "Trips") combine into one bucket. The API
+    # passes each team's raw->canonical mapping ahead of this via normalization
+    # on read; the built-in synonyms below still apply offline (no mapping).
+    "formation": lambda df: df["formation"].map(vocab.normalize_formation).fillna("(unknown)"),
+    "motion": lambda df: df["motion_type"].map(vocab.normalize_motion).fillna("NONE"),
     "quarter": lambda df: "Q" + df["quarter"].astype(str),
     "hash": lambda df: df["hash"].fillna("(unknown)"),
 }

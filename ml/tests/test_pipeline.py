@@ -7,6 +7,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from engage8 import vocab
 from engage8.config import CANONICAL_COLUMNS
 from engage8.features import build_features, TARGET
 from engage8.tendencies import tendency_table
@@ -96,10 +97,42 @@ def test_hudl_adapter_maps_and_converts():
     assert set(df["offense_team"]) == {"LINCOLN"}     # team label applied
 
 
+def test_vocab_normalizes_naming_variants():
+    # Casing, direction, and synonyms all fold onto one canonical token.
+    assert vocab.normalize_formation("Trips Rt") == "TRIPS"
+    assert vocab.normalize_formation("TRIPS") == "TRIPS"
+    assert vocab.normalize_formation("trips left") == "TRIPS"
+    assert vocab.normalize_formation("3x1") == "TRIPS"
+    # Unrecognized values pass through unchanged (never silently dropped).
+    assert vocab.normalize_formation("Weird Set") == "Weird Set"
+    assert not vocab.is_canonical("formation", "Weird Set")
+    # A per-team mapping wins and makes the value canonical.
+    fmap = vocab.build_mapping([("Weird Set", "PRO")])
+    assert vocab.normalize_formation("weird set", fmap) == "PRO"
+    # Motion: none-like and empty both fold to NONE; synonyms fold too.
+    assert vocab.normalize_motion("") == "NONE"
+    assert vocab.normalize_motion(None) == "NONE"
+    assert vocab.normalize_motion("Fly") == "JET"
+    assert vocab.normalize_motion("Jet Rt") == "JET"
+
+
+def test_motion_tendency_split():
+    plays = _synthetic_plays(n=200)
+    # Give half the plays a jet-motion variant so there is a real bucket.
+    plays.loc[plays.index[::2], "motion_type"] = "Jet Rt"
+    table = tendency_table(plays, split="motion")
+    assert not table.empty
+    assert "JET" in set(table["bucket"])          # variant folded to canonical
+    for _, r in table.iterrows():
+        assert abs(r["run_pct"] + r["pass_pct"] - 100.0) < 0.5
+
+
 if __name__ == "__main__":
     test_build_features_has_target_and_flags()
     test_lag_features_are_chronological()
     test_tendency_table_sums_to_100()
     test_third_and_long_is_pass_heavy()
     test_hudl_adapter_maps_and_converts()
+    test_vocab_normalizes_naming_variants()
+    test_motion_tendency_split()
     print("All tests passed")

@@ -23,17 +23,12 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
-def get_current_user(
-    token: str | None = Depends(oauth2_scheme),
-    db: Session = Depends(get_db),
-) -> User:
+def _decode_user(token: str, db: Session) -> User:
     creds_exc = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    if not token:
-        raise creds_exc
     sub = decode_access_token(token)
     if sub is None:
         raise creds_exc
@@ -41,3 +36,31 @@ def get_current_user(
     if user is None:
         raise creds_exc
     return user
+
+
+def get_current_user(
+    token: str | None = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> User:
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return _decode_user(token, db)
+
+
+def get_current_user_optional(
+    token: str | None = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> User | None:
+    """Like ``get_current_user``, but returns ``None`` instead of 401 when no
+    token is supplied at all (a present-but-invalid token still raises 401).
+
+    Lets one endpoint serve both anonymous requests and requests that need an
+    authenticated, ownership-checked resource depending on the query.
+    """
+    if not token:
+        return None
+    return _decode_user(token, db)
