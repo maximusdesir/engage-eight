@@ -9,7 +9,8 @@ from __future__ import annotations
 from datetime import datetime
 
 from sqlalchemy import (
-    Boolean, DateTime, Float, ForeignKey, Integer, String, Text, func,
+    Boolean, DateTime, Float, ForeignKey, Integer, String, Text,
+    UniqueConstraint, func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -95,6 +96,27 @@ class Play(Base):
     epa: Mapped[float | None] = mapped_column(Float, nullable=True)
     explosive: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
 
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class VocabMapping(Base):
+    """Per-team raw->canonical mapping for formations and pre-snap motions.
+
+    Teams name formations/motions differently, so raw import strings ("Trips Rt")
+    are stored on plays as-is and folded onto the canonical vocabulary on read.
+    A coach resolves unrecognized raws here; the row is the seam a picture-based
+    picker plugs into later (it just writes canonical_value).
+    """
+    __tablename__ = "vocab_mappings"
+    __table_args__ = (
+        UniqueConstraint("team_id", "kind", "raw_value", name="uq_vocab_team_kind_raw"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    team_id: Mapped[int] = mapped_column(ForeignKey("teams.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(16))  # formation|motion
+    raw_value: Mapped[str] = mapped_column(String(80))
+    canonical_value: Mapped[str] = mapped_column(String(40))
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 

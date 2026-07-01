@@ -42,9 +42,10 @@ A random split would leak the future and inflate the results.
 | Layer | Status |
 |-------|--------|
 | Data + ML pipeline (`ml/`) | Working end-to-end on real NFL data |
-| API (`api/`) | Planned |
-| Web app (`web/`) | Planned |
+| API (`api/`) | Working (auth, predict/recommend, tendencies, uploads, vocab) |
+| Web app (`web/`) | Working MVP (Vite + React dashboard over the API) |
 | Hudl CSV import | Working (breakdown export to plays) |
+| Formation/motion vocabulary | Working (canonical vocab + per-team mapping) |
 
 ### Measured results (run/pass, 2019-2023)
 
@@ -65,15 +66,27 @@ line.
 
 ## Roadmap
 
+Done:
+
+- **Formation and pre-snap motion tendencies.** A team lines up in Pro Right on
+  3rd down and jet-motions the slot, and the tendency matrix says run. Formation
+  and motion are captured from Hudl imports and manual charting, folded onto a
+  canonical vocabulary (`ml/engage8/vocab.py`) so a team's naming variants
+  ("Trips Rt" / "Trips") combine into one bucket. Unrecognized names are surfaced
+  for the coach to map per team; mappings apply on read, no re-import needed. Both
+  `formation` and `motion` are tendency splits, and they feed the model as
+  categorical features.
+
+- **Web dashboard.** A Vite + React dashboard (`web/`) over the API: sign in,
+  upload breakdowns, browse the tendency matrix, map vocabulary, and run
+  predict/recommend in the browser.
+
 Planned next, roughly in priority order:
 
-1. **Formation and pre-snap motion tendencies.** The current model reads the
-   situation only (down, distance, field position, score, time), because open
-   nflverse data has no reliable formation or motion tags. The biggest accuracy
-   gain is feeding in alignment and motion once they are captured (through Hudl
-   imports and manual charting). That is what a middle linebacker actually keys
-   on: if a team lines up in Pro Right on 3rd down and jet-motions the slot, it
-   can be 98% run, and the model should say so.
+1. **Picture-based vocabulary matching.** Replace the text mapping UI with a
+   grid of formation/motion diagrams a coach clicks to map raw names, so no one
+   has to know the canonical spelling. The mapping API and the
+   `CanonicalPicker` component are already the seam for this.
 
 2. **Per-team and per-coordinator model training.** Instead of one
    league-average model, train or fine-tune a model per opponent so week-to-week
@@ -81,9 +94,9 @@ Planned next, roughly in priority order:
    workflow: import a team's breakdown, train on it, and get a scouting-ready
    model for that week.
 
-3. **Web dashboard.** A Next.js frontend (the tendency matrix plus a
-   predict/recommend screen) deployed on Vercel, so coaches and players use the
-   tool in a browser instead of the API docs.
+3. **Hosted deploy.** Ship the dashboard and API to a hosted environment
+   (e.g. Vercel + a managed API/Postgres) so coaches use it without a local
+   setup.
 
 ## Quickstart (ML pipeline)
 
@@ -111,8 +124,8 @@ python -m engage8.predict --down 2 --distance 6 --yardline 38 \
 ```
 engage_eight/
 ├── ml/        # data pipeline + model training (start here)
-├── api/       # FastAPI service (planned)
-└── web/       # Next.js dashboard (planned)
+├── api/       # FastAPI service (auth, predict, tendencies, uploads, vocab)
+└── web/       # Vite + React dashboard
 ```
 
 ## Data sources

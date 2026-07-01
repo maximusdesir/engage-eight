@@ -33,3 +33,7 @@ class UploadSummary(BaseModel):
     teams: list[str]
     source: str          # "charting" or "hudl" (the format actually used)
     message: str
+    # Raw formation/motion values the built-in vocab didn't recognize; the
+    # upload screen prompts the coach to map these on the Vocabulary screen.
+    unmapped_formations: list[str] = []
+    unmapped_motions: list[str] = []

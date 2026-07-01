@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .db.session import init_db
-from .routers import auth, plays, predict, teams, tendencies, uploads
+from .routers import auth, plays, predict, teams, tendencies, uploads, vocab
 
 
 @asynccontextmanager
@@ -46,3 +46,4 @@ app.include_router(plays.router)
 app.include_router(predict.router)
 app.include_router(tendencies.router)
 app.include_router(uploads.router)
+app.include_router(vocab.router)

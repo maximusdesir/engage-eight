@@ -77,5 +77,10 @@ def upload_charting(
     resolved = summary["source"]
     message = f"Inserted {inserted} plays from {resolved} export for {len(teams)} team(s)."
     return UploadSummary(
-        inserted=inserted, teams=teams, source=resolved, message=message
+        inserted=inserted,
+        teams=teams,
+        source=resolved,
+        message=message,
+        unmapped_formations=summary.get("unmapped_formations", []),
+        unmapped_motions=summary.get("unmapped_motions", []),
     )
