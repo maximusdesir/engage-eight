@@ -1,7 +1,7 @@
 # Engage Eight
 
-<img src="docs/logo.svg" align="right"
-     alt="Engage Eight logo: a defender reading an offensive formation"
+<img src="docs/logo.jpg" align="right"
+     alt="Engage Eight logo: a blitz play diagram"
      width="120" height="120">
 
 Engage Eight predicts whether a football offense will run or pass before the
