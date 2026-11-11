@@ -14,10 +14,13 @@ from __future__ import annotations
 import argparse
 import re
 
-import numpy as np
 import pandas as pd
 
 from . import config
+from .parsing import (
+    half_from_quarter, explosive_flag, is_blank, parse_flag, parse_play_type,
+    parse_shotgun, parse_tempo, read_csv, to_int,
+)
 
 # Normalized Hudl header -> intermediate field. Headers are matched after
 # uppercasing, dropping '.', and collapsing whitespace (so "Dist." -> "DIST").
@@ -41,6 +44,11 @@ HUDL_ALIASES = {
     "YD LN": "yardline_raw", "LOS": "yardline_raw", "BALL ON": "yardline_raw",
     "ODK": "odk", "PHASE": "odk",
     "OFF TEAM": "offense_team", "DEF TEAM": "defense_team",
+    "BACKFIELD": "backfield", "BACKFIELD SET": "backfield", "OFF BACKFIELD": "backfield",
+    "QB ALIGN": "backfield", "QB SET": "backfield",
+    "SHOTGUN": "shotgun_raw", "GUN": "shotgun_raw",
+    "NO HUDDLE": "tempo_raw", "TEMPO": "tempo_raw", "HUDDLE": "tempo_raw",
+    "NH": "tempo_raw",
 }
 
 # Hudl-ish headers used to auto-detect a Hudl file vs the plain charting CSV.
@@ -60,12 +68,8 @@ def _col(df: pd.DataFrame, name: str) -> pd.Series:
     return pd.Series([pd.NA] * len(df), index=df.index)
 
 
-def _to_int(series: pd.Series) -> pd.Series:
-    return pd.to_numeric(series, errors="coerce").astype("Int64")
-
-
 def _parse_hash(value) -> object:
-    if value is None or (isinstance(value, float) and pd.isna(value)):
+    if is_blank(value):
         return pd.NA
     s = str(value).strip().upper()
     if not s:
@@ -81,7 +85,7 @@ def _parse_hash(value) -> object:
 
 def _parse_personnel(value) -> object:
     """Pull a clean two-digit personnel grouping (e.g. '11', '21') if present."""
-    if value is None or (isinstance(value, float) and pd.isna(value)):
+    if is_blank(value):
         return pd.NA
     m = re.search(r"\d{2}", str(value))
     return m.group() if m else pd.NA
@@ -108,7 +112,7 @@ def _parse_yardline(value) -> object:
     Note: pandas often strips a leading '+', so an unsigned positive number is
     treated as opponent territory, matching the dominant Hudl convention.
     """
-    if value is None or (isinstance(value, float) and pd.isna(value)):
+    if is_blank(value):
         return pd.NA
     # Numeric input: the sign is authoritative.
     if isinstance(value, (int, float)) and not isinstance(value, bool):
@@ -137,30 +141,19 @@ def _parse_yardline(value) -> object:
     return _yl_from_signed(yard)  # unsigned -> opponent territory (convention)
 
 
-def _parse_play_type(raw, play_name) -> object:
-    """Resolve run vs pass from the play-type column, falling back to the name."""
-    for text in (raw, play_name):
-        if text is None or (isinstance(text, float) and pd.isna(text)):
-            continue
-        t = str(text).strip().upper()
-        if not t:
-            continue
-        if t in ("PASS", "P") or "PASS" in t or "SCREEN" in t or "DROPBACK" in t \
-                or "DROP BACK" in t or "PA " in t or "PLAY ACTION" in t:
-            return "pass"
-        if t in ("RUN", "R", "RUSH") or "RUN" in t or "RUSH" in t or "DRAW" in t \
-                or "SWEEP" in t or "ZONE" in t or "POWER" in t or "COUNTER" in t:
-            return "run"
-    return pd.NA
-
-
 def _clip(series: pd.Series, n: int) -> pd.Series:
-    return series.map(lambda v: v if (v is None or pd.isna(v)) else str(v)[:n])
+    return series.map(lambda v: pd.NA if is_blank(v) else str(v).strip()[:n])
 
 
 def load_hudl(path, default_offense_team: str | None = None) -> pd.DataFrame:
-    """Load a Hudl breakdown CSV and map it to the canonical Play schema."""
-    raw = pd.read_csv(path)
+    """Load a Hudl breakdown CSV and map it to the canonical Play schema.
+
+    Rows that can't be used are dropped and counted in ``df.attrs["skipped"]``
+    (no down, or run/pass couldn't be determined), with the unresolved play
+    names in ``df.attrs["unresolved_play_names"]`` so the caller can report
+    them instead of losing them silently.
+    """
+    raw = read_csv(path)
 
     colmap = {c: HUDL_ALIASES[_norm_header(c)] for c in raw.columns
               if _norm_header(c) in HUDL_ALIASES}
@@ -171,44 +164,60 @@ def load_hudl(path, default_offense_team: str | None = None) -> pd.DataFrame:
         if dst not in seen:
             dedup[src] = dst
             seen.add(dst)
-    work = raw.rename(columns=dedup)
+    work = raw[list(dedup)].rename(columns=dedup)
 
     # Keep offensive plays when an ODK/phase column exists.
     if "odk" in work.columns:
-        first = work["odk"].astype(str).str.strip().str.upper().str[:1]
+        first = work["odk"].map(lambda v: "" if is_blank(v) else str(v).strip().upper()[:1])
         work = work[first == "O"]
 
     out = pd.DataFrame(index=work.index)
-    out["down"] = _to_int(_col(work, "down"))
-    out["ydstogo"] = _to_int(_col(work, "ydstogo"))
-    out["quarter"] = _to_int(_col(work, "quarter"))
-    out["yardline_100"] = _to_int(_col(work, "yardline_raw").map(_parse_yardline))
+    out["down"] = to_int(_col(work, "down"))
+    out["ydstogo"] = to_int(_col(work, "ydstogo"))
+    out["quarter"] = to_int(_col(work, "quarter"))
+    out["yardline_100"] = to_int(_col(work, "yardline_raw").map(_parse_yardline))
     out["hash"] = _col(work, "hash").map(_parse_hash)
     out["personnel"] = _col(work, "personnel").map(_parse_personnel)
     out["formation"] = _clip(_col(work, "formation"), 40)
+    out["backfield"] = _clip(_col(work, "backfield"), 40)
     out["motion_type"] = _clip(_col(work, "motion_type"), 40)
+
+    # Shotgun: an explicit column wins, else infer from backfield/formation.
+    explicit = _col(work, "shotgun_raw").map(parse_flag)
+    inferred = pd.Series(
+        [parse_shotgun(b, f) for b, f in zip(out["backfield"], out["formation"])],
+        index=out.index, dtype="object",
+    )
+    out["shotgun"] = explicit.where(explicit.notna(), inferred).astype("Int64")
+    out["no_huddle"] = _col(work, "tempo_raw").map(parse_tempo).astype("Int64")
 
     play_name = _col(work, "play_name")
     pt_raw = _col(work, "play_type_raw")
-    out["play_type"] = [_parse_play_type(a, b) for a, b in zip(pt_raw, play_name)]
+    out["play_type"] = pd.Series(
+        [parse_play_type(a, b) for a, b in zip(pt_raw, play_name)],
+        index=out.index, dtype="object",
+    )
     out["play_family"] = _clip(play_name, 40)
-    out["result_yards"] = _to_int(_col(work, "result_yards"))
+    out["result_yards"] = to_int(_col(work, "result_yards"))
 
     team = _col(work, "offense_team")
     if default_offense_team is not None:
-        team = team.where(team.notna() & (team.astype(str) != ""), default_offense_team)
+        team = team.map(lambda v: default_offense_team if is_blank(v) else v)
     out["offense_team"] = team
     out["defense_team"] = _col(work, "defense_team")
 
-    # Keep only real run/pass plays with a down (the prediction target).
-    out = out[out["play_type"].isin(["run", "pass"]) & out["down"].notna()]
+    # Keep only real run/pass plays with a down (the prediction target), and
+    # account for everything dropped.
+    no_down = out["down"].isna()
+    unresolved = ~no_down & ~out["play_type"].isin(["run", "pass"])
+    unresolved_names = sorted(
+        {str(v) for v in out.loc[unresolved, "play_family"] if not is_blank(v)},
+        key=str.upper,
+    )
+    out = out[~no_down & ~unresolved].copy()
 
-    # Fill the remaining canonical columns and derive the simple ones.
-    out["half"] = np.where(pd.to_numeric(out["quarter"], errors="coerce") <= 2, 1, 2)
-    yards = pd.to_numeric(out["result_yards"], errors="coerce")
-    thresh = np.where(out["play_type"] == "run",
-                      config.EXPLOSIVE_RUN_YARDS, config.EXPLOSIVE_PASS_YARDS)
-    out["explosive"] = (yards >= thresh).astype("Int64")
+    out["half"] = half_from_quarter(out["quarter"])
+    out["explosive"] = explosive_flag(out["play_type"], out["result_yards"])
     out["play_id"] = [f"hudl_{i}" for i in range(len(out))]
 
     for col in config.CANONICAL_COLUMNS:
@@ -216,25 +225,34 @@ def load_hudl(path, default_offense_team: str | None = None) -> pd.DataFrame:
             out[col] = pd.NA
 
     out = out[config.CANONICAL_COLUMNS].reset_index(drop=True)
+    out.attrs["skipped"] = {
+        "no_down": int(no_down.sum()),
+        "unknown_run_pass": int(unresolved.sum()),
+    }
+    out.attrs["unresolved_play_names"] = unresolved_names
     teams = [t for t in out["offense_team"].dropna().unique().tolist()]
     print(f"Loaded {len(out):,} Hudl offensive plays" + (f" for {teams}" if teams else ""))
+    if unresolved.any():
+        print(f"  skipped {int(unresolved.sum())} plays with no run/pass call: "
+              f"{unresolved_names[:10]}")
     return out
 
 
 def looks_like_hudl(path) -> bool:
     """Heuristic: does this CSV's header row look like a Hudl export?"""
     try:
-        header = pd.read_csv(path, nrows=0).columns
+        header = pd.read_csv(path, nrows=0, encoding="utf-8-sig").columns
     except Exception:
         return False
     norm = {_norm_header(c) for c in header}
     # The plain charting CSV uses exact lowercase canonical names.
-    if "play_type" in set(header):
+    if "play_type" in {str(c).strip() for c in header}:
         return False
     return len(norm & HUDL_SIGNAL_HEADERS) >= 2
 
 
 def write_template(path=TEMPLATE_PATH) -> None:
+    config.ensure_data_dirs()
     rows = [
         ["1", "O", "1", "10", "-25", "L", "Trips Rt", "Inside Zone", "Run", "Jet", "11", "5", "1"],
         ["2", "O", "2", "5", "-30", "R", "Doubles", "Stick", "Pass", "None", "11", "8", "1"],

@@ -1,15 +1,27 @@
-"""End-to-end smoke test for the Engage Eight API (uses FastAPI TestClient)."""
+"""End-to-end smoke test for the Engage Eight API (FastAPI TestClient).
+
+    cd api && python smoke_test.py
+"""
 import os
 import tempfile
+from pathlib import Path
 
-# Use a throwaway DB so the test never touches a real one.
+# Throwaway DB, dev mode (placeholder JWT secret allowed). Set before importing
+# the app, which reads settings at import time.
 os.environ["ENGAGE8_DATABASE_URL"] = f"sqlite:///{tempfile.mktemp(suffix='.db')}"
+os.environ["ENGAGE8_DEBUG"] = "true"
 
-from fastapi.testclient import TestClient
-from app.main import app
-from app.db.session import init_db
+from fastapi.testclient import TestClient  # noqa: E402
 
-init_db()  # create tables (lifespan startup only fires under a context manager)
+from app.core import ratelimit  # noqa: E402
+from app.db.session import init_db  # noqa: E402
+from app.main import app  # noqa: E402
+
+FIXTURES = Path(__file__).resolve().parent.parent / "ml" / "tests" / "fixtures"
+PW = "correct-horse-1"
+
+init_db()  # alembic upgrade head (lifespan only fires under a context manager)
+ratelimit.reset()
 c = TestClient(app)
 ok = 0
 
@@ -23,159 +35,193 @@ def check(label, cond, extra=""):
     assert cond, label
 
 
+def login(email):
+    r = c.post("/auth/login", data={"username": email, "password": PW})
+    return {"Authorization": f"Bearer {r.json()['access_token']}"}
+
+
 # 1. health
 r = c.get("/health")
 check("GET /health", r.status_code == 200, r.json())
 
-# 2. auth: signup + login + me
-r = c.post("/auth/signup", json={"email": "coach@engage8.app", "password": "pw12345"})
-check("POST /auth/signup", r.status_code in (200, 201), r.status_code)
+# 2. auth: password minimum, signup, login, me
+r = c.post("/auth/signup", json={"email": "weak@engage8.app", "password": "x"})
+check("signup with a 1-char password -> 422", r.status_code == 422, r.status_code)
 
-r = c.post("/auth/login", data={"username": "coach@engage8.app", "password": "pw12345"})
-check("POST /auth/login", r.status_code == 200, r.status_code)
-token = r.json()["access_token"]
-auth = {"Authorization": f"Bearer {token}"}
-
+r = c.post("/auth/signup", json={"email": "coach@engage8.app", "password": PW})
+check("POST /auth/signup", r.status_code == 201, r.status_code)
+auth = login("coach@engage8.app")
 r = c.get("/auth/me", headers=auth)
 check("GET /auth/me", r.status_code == 200 and r.json()["email"] == "coach@engage8.app")
 
+r = c.post("/auth/signup", json={"email": "sneaky@x.com", "password": PW, "role": "admin"})
+check("signup ignores a client-set role", r.status_code == 201 and r.json()["role"] == "coach")
+
 # 3. teams + opponents
 r = c.post("/teams", json={"name": "My HS", "level": "hs", "season": 2026}, headers=auth)
-check("POST /teams", r.status_code in (200, 201), r.status_code)
+check("POST /teams", r.status_code == 201, r.status_code)
 team_id = r.json()["id"]
-
 r = c.get("/teams", headers=auth)
 check("GET /teams", r.status_code == 200 and len(r.json()) == 1)
-
-r = c.post(f"/teams/{team_id}/opponents", json={"name": "Central", "oc_name": "Smith"}, headers=auth)
-check("POST /teams/{id}/opponents", r.status_code in (200, 201), r.status_code)
-
-# 4. auth enforcement
+r = c.post(f"/teams/{team_id}/opponents", json={"name": "Central", "oc_name": "Smith"},
+           headers=auth)
+check("POST /teams/{id}/opponents", r.status_code == 201, r.status_code)
+opponent_id = r.json()["id"]
 r = c.get("/teams")
 check("GET /teams without token -> 401", r.status_code == 401, r.status_code)
 
-# 5. prediction (uses the trained ml model). A 503 means no model artifact is
-# present yet (train the ml pipeline to enable it); the rest of the suite still
-# exercises the API without it.
-model_ready = True
-r = c.post("/predict", json={"down": 3, "distance": 8, "yardline_100": 45, "quarter": 4})
-check("POST /predict", r.status_code in (200, 503), r.text[:200])
-if r.status_code == 200:
-    body = r.json()
-    print(f"        -> pass {body['pass_prob']:.0%} / run {body['run_prob']:.0%}, {body['lean']}")
-else:
-    model_ready = False
-    print("        -> model not trained; skipping predict/recommend assertions")
+# 4. predict / recommend (committed model)
+r = c.post("/predict", json={"down": 3, "distance": 8, "yardline_100": 45})
+check("POST /predict without token -> 401", r.status_code == 401, r.status_code)
+r = c.post("/predict", json={"down": 3, "distance": 8, "yardline_100": 45, "quarter": 4},
+           headers=auth)
+check("POST /predict", r.status_code == 200, r.text[:200])
+body = r.json()
+check("predict lean is RUN|PASS and model prob is reported",
+      body["lean"] in ("RUN", "PASS") and body["model_pass_prob"] == body["pass_prob"]
+      and body["blend"] == [])
+gun = c.post("/predict", headers=auth, json={"down": 1, "distance": 10, "yardline_100": 75,
+                                            "shotgun": True}).json()["pass_prob"]
+uc = c.post("/predict", headers=auth, json={"down": 1, "distance": 10, "yardline_100": 75,
+                                           "shotgun": False}).json()["pass_prob"]
+check("shotgun moves the prediction", gun > uc + 0.1, f"gun {gun} vs under center {uc}")
 
-# 6. recommendation
-if model_ready:
-    r = c.post("/recommend", json={"down": 3, "distance": 1, "yardline_100": 3})
-    check("POST /recommend", r.status_code == 200, r.status_code)
-    if r.status_code == 200:
-        recs = r.json()["recommendations"]
-        print(f"        -> top call: {recs[0]['front']} / {recs[0]['coverage']} / {recs[0]['pressure']}")
+r = c.post("/recommend", json={"down": 3, "distance": 1, "yardline_100": 3}, headers=auth)
+check("POST /recommend", r.status_code == 200, r.status_code)
+recs = r.json()["recommendations"]
+check("recommendations carry no invented scores",
+      recs and all("confidence" not in x and "expected_epa_prevented" not in x for x in recs)
+      and "Rules-based" in r.json()["basis"])
 
-# 7. plays + tendencies
+# 5. plays, scoped to a team
 for pt, dn, dist in [("run", 1, 10), ("pass", 3, 8), ("run", 2, 2), ("pass", 3, 9)]:
-    c.post("/plays", json={"offense_team": "CENTRAL", "down": dn, "ydstogo": dist,
-                           "yardline_100": 50, "play_type": pt, "quarter": 1}, headers=auth)
-r = c.get("/plays", headers=auth, params={"offense_team": "CENTRAL"})
-check("GET /plays", r.status_code == 200 and len(r.json()) >= 4, len(r.json()))
+    r = c.post(f"/teams/{team_id}/plays", headers=auth, json={
+        "offense_team": "CENTRAL", "down": dn, "ydstogo": dist, "yardline_100": 50,
+        "play_type": pt, "quarter": 1})
+check("POST /teams/{id}/plays", r.status_code == 201, r.text[:200])
+manual_play_id = r.json()["id"]
+r = c.get(f"/teams/{team_id}/plays", headers=auth, params={"offense_team": "CENTRAL"})
+check("GET /teams/{id}/plays", r.status_code == 200 and len(r.json()) == 4, len(r.json()))
 
-r = c.get("/tendencies", params={"team": "CENTRAL", "split": "down_distance"})
-check("GET /tendencies", r.status_code == 200, r.status_code)
-if r.status_code == 200:
-    print(f"        -> {len(r.json()['rows'])} tendency buckets")
+r = c.get(f"/teams/{team_id}/tendencies", params={"team": "CENTRAL"}, headers=auth)
+check("GET /teams/{id}/tendencies", r.status_code == 200 and len(r.json()["rows"]) >= 1)
+r = c.get(f"/teams/{team_id}/tendencies", params={"split": "not_a_split"}, headers=auth)
+check("tendencies bad split -> 400", r.status_code == 400, r.status_code)
+r = c.get(f"/teams/{team_id}/tendencies")
+check("tendencies without token -> 401", r.status_code == 401, r.status_code)
 
-r = c.get("/tendencies", params={"split": "not_a_split"})
-check("GET /tendencies bad split -> 400", r.status_code == 400, r.status_code)
+# 6. isolation: a second account sees none of the first account's data
+c.post("/auth/signup", json={"email": "other-coach@engage8.app", "password": PW})
+other = login("other-coach@engage8.app")
+other_team = c.post("/teams", json={"name": "Other HS"}, headers=other).json()["id"]
+for path in ("plays", "tendencies", "uploads", "vocab"):
+    r = c.get(f"/teams/{team_id}/{path}", headers=other)
+    check(f"other user GET /teams/{{A}}/{path} -> 404", r.status_code == 404, r.status_code)
+r = c.get(f"/teams/{other_team}/plays", headers=other, params={"offense_team": "CENTRAL"})
+check("same label in another team returns only that team's plays",
+      r.status_code == 200 and r.json() == [], r.text[:100])
+r = c.delete(f"/teams/{team_id}/plays/{manual_play_id}", headers=other)
+check("other user can't delete A's play", r.status_code == 404, r.status_code)
+r = c.post("/predict", headers=other, json={"down": 3, "distance": 8, "yardline_100": 45,
+                                           "team_id": team_id, "offense_team": "CENTRAL"})
+check("other user can't blend with A's plays", r.status_code == 404, r.status_code)
 
-# 8. uploads now require auth (fix #3)
+# 7. uploads
 csv = ("offense_team,down,ydstogo,yardline_100,play_type,result_yards\n"
        "CENTRAL,1,10,75,run,5\nCENTRAL,3,8,40,pass,12\n")
-r = c.post("/uploads", files={"file": ("chart.csv", csv, "text/csv")})
-check("POST /uploads without token -> 401", r.status_code == 401, r.status_code)
+r = c.post(f"/teams/{team_id}/uploads", files={"file": ("chart.csv", csv, "text/csv")})
+check("upload without token -> 401", r.status_code == 401, r.status_code)
+r = c.post(f"/teams/{team_id}/uploads", files={"file": ("chart.csv", csv, "text/csv")},
+           headers=auth)
+check("upload charting CSV", r.status_code == 201 and r.json()["inserted"] == 2, r.text[:200])
+chart_upload = r.json()["upload_id"]
+r = c.post(f"/teams/{team_id}/uploads", files={"file": ("again.csv", csv, "text/csv")},
+           headers=auth)
+check("re-uploading the same file -> 409", r.status_code == 409, r.status_code)
+r = c.post(f"/teams/{other_team}/uploads", files={"file": ("chart.csv", csv, "text/csv")},
+           headers=other)
+check("another team can upload the same file", r.status_code == 201, r.status_code)
 
-r = c.post("/uploads", files={"file": ("chart.csv", csv, "text/csv")}, headers=auth)
-check("POST /uploads with token", r.status_code == 200, r.text[:200])
-if r.status_code == 200:
-    print(f"        -> inserted {r.json()['inserted']} plays")
+# Real-shaped Hudl export: BOM, blank QTR cells, kicks and an extra point.
+r = c.post(f"/teams/{team_id}/uploads", headers=auth,
+           data={"source": "auto", "team": "LINCOLN", "opponent_id": str(opponent_id)},
+           files={"file": ("export.csv", (FIXTURES / "hudl_standard_export.csv").read_bytes(),
+                           "text/csv")})
+body = r.json()
+check("Hudl export with blank QTR imports (auto-detected)",
+      r.status_code == 201 and body["source"] == "hudl" and body["inserted"] == 9
+      and body["teams"] == ["LINCOLN"], r.text[:300])
+check("skipped rows are reported", body.get("skipped", {}).get("unknown_run_pass") == 1,
+      body.get("skipped"))
 
-# 8b. Hudl CSV upload, format auto-detected, team labeled
-# "Diamond" is a team-specific name the built-in vocab doesn't know, so it
-# surfaces as unmapped; "Trips Rt" auto-folds to canonical TRIPS.
-hudl_csv = ("PLAY #,ODK,DN,DIST,YARD LN,HASH,OFF FORM,OFF PLAY,PLAY TYPE,MOTION,PERS,GN/LS,QTR\n"
-            "1,O,1,10,-25,L,Diamond,Inside Zone,Run,Jet,11,5,1\n"
-            "2,O,3,8,+35,R,Empty,Four Verticals,Pass,,10,12,2\n"
-            "3,D,1,10,+20,L,,,,,,0,2\n")
-r = c.post("/uploads", data={"source": "auto", "team": "LINCOLN"},
-           files={"file": ("export.csv", hudl_csv, "text/csv")}, headers=auth)
-detected = r.json().get("source") if r.status_code == 200 else None
-check("POST /uploads Hudl (auto-detected)",
-      r.status_code == 200 and detected == "hudl" and r.json()["inserted"] == 2
-      and "LINCOLN" in r.json()["teams"], r.text[:200])
-if r.status_code == 200:
-    print(f"        -> detected '{detected}', inserted {r.json()['inserted']} (defense row dropped)")
-
-# 8c. motion tendency split works on the ingested Hudl motion data
-r = c.get("/tendencies", params={"team": "LINCOLN", "split": "motion"})
-check("GET /tendencies split=motion",
-      r.status_code == 200 and len(r.json()["rows"]) >= 1, r.text[:200])
-if r.status_code == 200:
-    buckets = {row["bucket"] for row in r.json()["rows"]}
-    print(f"        -> motion buckets: {sorted(buckets)}")
-
-# 8d. Hudl upload surfaced unmapped formation raws ("Trips Rt" not built-in)
-r = c.post("/uploads", data={"source": "auto", "team": "LINCOLN"},
-           files={"file": ("export2.csv", hudl_csv, "text/csv")}, headers=auth)
-unmapped_f = r.json().get("unmapped_formations", []) if r.status_code == 200 else []
+r = c.post(f"/teams/{team_id}/uploads", headers=auth, data={"team": "NORTH"},
+           files={"file": ("noplaytype.csv", (FIXTURES / "hudl_no_play_type.csv").read_bytes(),
+                           "text/csv")})
+body = r.json()
+check("Hudl export without PLAY TYPE reports unresolved names",
+      r.status_code == 201 and body["inserted"] == 4
+      and body["unresolved_play_names"] == ["Black 23", "RPO Glance"], r.text[:300])
 check("upload surfaces unmapped formations",
-      r.status_code == 200 and "Diamond" in unmapped_f, unmapped_f)
+      body["unmapped_formations"] == ["Pistol Trey"], body["unmapped_formations"])
 
-# 8e. vocab: GET options + unmapped, POST a mapping, confirm it clears
-r = c.get(f"/teams/{team_id}/vocab", params={"team": "LINCOLN"}, headers=auth)
-check("GET /teams/{id}/vocab",
-      r.status_code == 200 and "TRIPS" in r.json()["canonical"]["formations"]
-      and "Diamond" in r.json()["unmapped"]["formations"], r.text[:200])
-
-r = c.post(f"/teams/{team_id}/vocab", headers=auth,
-           json=[{"kind": "formation", "raw_value": "Diamond", "canonical_value": "TRIPS"}])
-check("POST /teams/{id}/vocab", r.status_code == 200
-      and r.json()[0]["canonical_value"] == "TRIPS", r.text[:200])
-
-r = c.get(f"/teams/{team_id}/vocab", params={"team": "LINCOLN"}, headers=auth)
-check("mapping clears the unmapped value",
-      r.status_code == 200 and "Diamond" not in r.json()["unmapped"]["formations"],
-      r.json()["unmapped"]["formations"])
-
-# 8f. tendencies with team_id applies the mapping (raw folds to canonical TRIPS),
-# but team_id is a private, per-team resource (same data /teams/{id}/vocab
-# guards), so it requires auth + ownership -- not just a public split query.
-r = c.get("/tendencies", params={"team": "LINCOLN", "split": "formation", "team_id": team_id},
+r = c.get(f"/teams/{team_id}/tendencies", params={"team": "LINCOLN", "split": "quarter"},
           headers=auth)
-check("GET /tendencies split=formation with team_id maps to TRIPS",
-      r.status_code == 200 and "TRIPS" in {row["bucket"] for row in r.json()["rows"]},
-      r.text[:200])
+check("quarter split shows unknown quarters",
+      r.status_code == 200 and "(unknown)" in {x["bucket"] for x in r.json()["rows"]},
+      [x["bucket"] for x in r.json()["rows"]])
+r = c.get(f"/teams/{team_id}/tendencies", params={"opponent_id": opponent_id}, headers=auth)
+check("tendencies by opponent_id", r.status_code == 200
+      and sum(x["plays"] for x in r.json()["rows"]) == 9, r.text[:200])
 
-r = c.get("/tendencies", params={"split": "formation", "team_id": team_id})
-check("GET /tendencies with team_id, no token -> 401", r.status_code == 401, r.status_code)
+r = c.get(f"/teams/{team_id}/uploads", headers=auth)
+check("GET /teams/{id}/uploads", r.status_code == 200 and len(r.json()) == 3, len(r.json()))
+before = len(c.get(f"/teams/{team_id}/plays", headers=auth, params={"limit": 1000}).json())
+r = c.delete(f"/teams/{team_id}/uploads/{chart_upload}", headers=auth)
+after = len(c.get(f"/teams/{team_id}/plays", headers=auth, params={"limit": 1000}).json())
+check("DELETE upload removes its plays", r.status_code == 204 and after == before - 2,
+      f"{before} -> {after}")
+r = c.delete(f"/teams/{team_id}/plays/{manual_play_id}", headers=auth)
+check("DELETE /teams/{id}/plays/{play_id}", r.status_code == 204, r.status_code)
 
-r2 = c.post("/auth/signup", json={"email": "other-coach@engage8.app", "password": "pw12345"})
-other_token = c.post("/auth/login", data={"username": "other-coach@engage8.app",
-                                           "password": "pw12345"}).json()["access_token"]
-other_auth = {"Authorization": f"Bearer {other_token}"}
-r = c.get("/tendencies", params={"split": "formation", "team_id": team_id}, headers=other_auth)
-check("GET /tendencies with team_id owned by a different user -> 404",
-      r.status_code == 404, r.status_code)
-
-# 8g. vocab endpoints require auth
+# 8. vocab: options + unmapped, map one, confirm it clears and applies
+r = c.get(f"/teams/{team_id}/vocab", params={"team": "NORTH"}, headers=auth)
+check("GET /teams/{id}/vocab", r.status_code == 200
+      and "TRIPS" in r.json()["canonical"]["formations"]
+      and "Pistol Trey" in r.json()["unmapped"]["formations"], r.text[:200])
+r = c.post(f"/teams/{team_id}/vocab", headers=auth, json=[
+    {"kind": "formation", "raw_value": "Pistol Trey", "canonical_value": "TREY"}])
+check("POST /teams/{id}/vocab", r.status_code == 200
+      and r.json()[0]["canonical_value"] == "TREY", r.text[:200])
+r = c.get(f"/teams/{team_id}/vocab", params={"team": "NORTH"}, headers=auth)
+check("mapping clears the unmapped value",
+      "Pistol Trey" not in r.json()["unmapped"]["formations"])
+r = c.get(f"/teams/{team_id}/tendencies", params={"team": "NORTH", "split": "formation"},
+          headers=auth)
+check("formation split uses the team mapping",
+      "TREY" in {x["bucket"] for x in r.json()["rows"]}, r.text[:200])
 r = c.get(f"/teams/{team_id}/vocab")
-check("GET /teams/{id}/vocab without token -> 401", r.status_code == 401, r.status_code)
+check("vocab without token -> 401", r.status_code == 401, r.status_code)
 
-# 9. signup no longer accepts a client-set role (fix #2): role is ignored
-r = c.post("/auth/signup", json={"email": "sneaky@x.com", "password": "pw12345",
-                                 "role": "admin"})
-check("POST /auth/signup ignores role", r.status_code in (200, 201)
-      and r.json()["role"] == "coach", r.json().get("role"))
+# 9. opponent blend: an opponent that runs on 3rd & long pulls the lean to run
+rows = ["offense_team,quarter,down,ydstogo,yardline_100,play_type,formation,shotgun"]
+rows += ["RUNNERS,2,3,9,50,run,Pro,0"] * 30 + ["RUNNERS,2,3,8,45,pass,Pro,0"] * 2
+rows += ["RUNNERS,1,1,10,70,run,I,0"] * 8 + ["RUNNERS,2,1,10,60,pass,I,0"] * 8
+r = c.post(f"/teams/{team_id}/uploads", headers=auth,
+           files={"file": ("runners.csv", "\n".join(rows) + "\n", "text/csv")})
+check("upload opponent plays for the blend", r.status_code == 201, r.text[:200])
+r = c.post("/predict", headers=auth, json={
+    "down": 3, "distance": 8, "yardline_100": 45, "shotgun": False,
+    "team_id": team_id, "offense_team": "RUNNERS", "formation": "Pro"})
+body = r.json()
+check("blend pulls the prediction toward the opponent's tendency",
+      r.status_code == 200 and len(body["blend"]) == 2  # Pro level adds no new plays
+      and body["pass_prob"] < body["model_pass_prob"] - 0.2,
+      f"model {body.get('model_pass_prob')} -> blended {body.get('pass_prob')}, "
+      f"{[s['label'] for s in body.get('blend', [])]}")
+
+# 10. rate limiting on login (last: it uses up this client's login budget)
+codes = [c.post("/auth/login", data={"username": "coach@engage8.app", "password": "wrong"}
+                ).status_code for _ in range(12)]
+check("login is rate limited", 429 in codes, codes)
 
 print(f"\n{ok} checks passed.")

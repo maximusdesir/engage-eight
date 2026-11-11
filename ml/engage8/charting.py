@@ -11,10 +11,13 @@ from __future__ import annotations
 
 import argparse
 
-import numpy as np
 import pandas as pd
 
 from . import config
+from .parsing import (
+    explosive_flag, half_from_quarter, parse_flag, parse_play_type,
+    parse_shotgun, read_csv,
+)
 
 # The minimal columns a coach/analyst fills in while charting film.
 CHARTING_COLUMNS = [
@@ -23,6 +26,7 @@ CHARTING_COLUMNS = [
     "down", "ydstogo", "yardline_100", "hash",
     "score_differential",
     "personnel", "formation", "backfield", "motion_type",
+    "shotgun", "no_huddle",
     "play_type", "play_family", "pass_concept", "run_concept",
     "result_yards",
 ]
@@ -31,12 +35,14 @@ TEMPLATE_PATH = config.DATA_DIR / "charting_template.csv"
 
 
 def write_template(path=TEMPLATE_PATH) -> None:
+    config.ensure_data_dirs()
     example = {
         "game_id": "2026_wk1_us_vs_central", "offense_team": "CENTRAL",
         "defense_team": "US", "quarter": 1, "game_seconds_remaining": 720,
         "down": 1, "ydstogo": 10, "yardline_100": 75, "hash": "M",
         "score_differential": 0, "personnel": "11", "formation": "Trips",
-        "backfield": "Gun", "motion_type": "Jet", "play_type": "run",
+        "backfield": "Gun", "motion_type": "Jet", "shotgun": 1, "no_huddle": 0,
+        "play_type": "run",
         "play_family": "Inside Zone", "pass_concept": "", "run_concept": "IZ",
         "result_yards": 5,
     }
@@ -46,32 +52,55 @@ def write_template(path=TEMPLATE_PATH) -> None:
 
 
 def load_charting(path) -> pd.DataFrame:
-    """Validate a charting CSV and map it to the canonical Play schema."""
-    df = pd.read_csv(path)
+    """Validate a charting CSV and map it to the canonical Play schema.
+
+    ``play_type`` accepts run/pass in any case (also R/P, rush, dropback). Rows
+    without a usable down or run/pass value are dropped and counted in
+    ``df.attrs["skipped"]``.
+    """
+    df = read_csv(path)
     missing = [c for c in ("down", "ydstogo", "yardline_100", "play_type") if c not in df.columns]
     if missing:
-        raise SystemExit(f"Charting file missing required columns: {missing}")
+        raise ValueError(f"Charting file missing required columns: {missing}")
 
-    bad = ~df["play_type"].isin(["run", "pass"])
-    if bad.any():
-        print(f"  warning: dropping {bad.sum()} rows with non run/pass play_type")
-        df = df[~bad]
+    play_type = pd.Series(
+        [parse_play_type(v) for v in df["play_type"]], index=df.index, dtype="object"
+    )
+    down = pd.to_numeric(df["down"], errors="coerce")
+    no_down = down.isna()
+    unresolved = ~no_down & ~play_type.isin(["run", "pass"])
+    unresolved_values = sorted(
+        {str(v) for v in df.loc[unresolved, "play_type"].dropna()}, key=str.upper
+    )
+    keep = ~no_down & ~unresolved
+    df = df[keep].copy()
+    df["play_type"] = play_type[keep]
 
     out = pd.DataFrame(index=df.index)
     for col in config.CANONICAL_COLUMNS:
         out[col] = df[col] if col in df.columns else pd.NA
 
     out["play_id"] = [f"chart_{i}" for i in range(len(out))]
-    out["season"] = out["season"] if "season" in df.columns else 2026
-    out["half"] = np.where(pd.to_numeric(out["quarter"], errors="coerce") <= 2, 1, 2)
-
-    yards = pd.to_numeric(out["result_yards"], errors="coerce")
-    thresh = np.where(out["play_type"] == "run",
-                      config.EXPLOSIVE_RUN_YARDS, config.EXPLOSIVE_PASS_YARDS)
-    out["explosive"] = (yards >= thresh).astype("Int64")
+    out["half"] = half_from_quarter(out["quarter"])
+    out["no_huddle"] = out["no_huddle"].map(parse_flag).astype("Int64")
+    shotgun = out["shotgun"].map(parse_flag)
+    inferred = pd.Series(
+        [parse_shotgun(b, f) for b, f in zip(out["backfield"], out["formation"])],
+        index=out.index, dtype="object",
+    )
+    out["shotgun"] = shotgun.where(shotgun.notna(), inferred).astype("Int64")
+    out["explosive"] = explosive_flag(out["play_type"], out["result_yards"])
     out = out[config.CANONICAL_COLUMNS].reset_index(drop=True)
+    out.attrs["skipped"] = {
+        "no_down": int(no_down.sum()),
+        "unknown_run_pass": int(unresolved.sum()),
+    }
+    out.attrs["unresolved_play_names"] = unresolved_values
     print(f"Loaded {len(out):,} charted plays for "
           f"{out['offense_team'].dropna().unique().tolist()}")
+    if unresolved.any():
+        print(f"  skipped {int(unresolved.sum())} rows with play_type not run/pass: "
+              f"{unresolved_values[:10]}")
     return out
 
 

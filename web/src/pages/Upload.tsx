@@ -1,14 +1,45 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { api, ApiError, type UploadSummary } from "../api/client";
+import { useStore } from "../store";
+import {
+  api,
+  ApiError,
+  type UploadRecord,
+  type UploadSummary,
+} from "../api/client";
 
 export default function Upload() {
+  const { activeTeam } = useStore();
+  const [uploads, setUploads] = useState<UploadRecord[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [source, setSource] = useState("auto");
   const [team, setTeam] = useState("");
   const [summary, setSummary] = useState<UploadSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const teamId = activeTeam?.id;
+  const refresh = useCallback(async () => {
+    if (teamId == null) return;
+    try {
+      setUploads(await api.listUploads(teamId));
+    } catch {
+      setUploads([]);
+    }
+  }, [teamId]);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  if (!activeTeam) {
+    return (
+      <div>
+        <h1>Upload film breakdown</h1>
+        <p className="subtitle">Create or select a team first (Teams screen).</p>
+      </div>
+    );
+  }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,13 +48,29 @@ export default function Upload() {
     setSummary(null);
     setBusy(true);
     try {
-      setSummary(await api.upload(file, source, team || null));
+      setSummary(await api.upload(activeTeam.id, file, source, team || null));
+      await refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Upload failed");
     } finally {
       setBusy(false);
     }
   };
+
+  const remove = async (u: UploadRecord) => {
+    if (!confirm(`Delete "${u.filename}" and its ${u.n_plays} plays?`)) return;
+    setError(null);
+    try {
+      await api.deleteUpload(activeTeam.id, u.id);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Delete failed");
+    }
+  };
+
+  const skippedTotal = summary
+    ? Object.values(summary.skipped).reduce((a, b) => a + b, 0)
+    : 0;
 
   const hasUnmapped =
     summary &&
@@ -34,7 +81,8 @@ export default function Upload() {
     <div>
       <h1>Upload film breakdown</h1>
       <p className="subtitle">
-        Import a Hudl breakdown export or a manual charting CSV. Formats are
+        Import a Hudl breakdown export or a manual charting CSV into{" "}
+        {activeTeam.name}. Only you can see these plays. Formats are
         auto-detected; anything the vocabulary doesn't recognize is flagged for
         mapping.
       </p>
@@ -59,7 +107,7 @@ export default function Upload() {
               </select>
             </div>
             <div className="field">
-              <label>Label team (optional)</label>
+              <label>Opponent label (optional)</label>
               <input
                 value={team}
                 onChange={(e) => setTeam(e.target.value)}
@@ -81,6 +129,25 @@ export default function Upload() {
             Detected format: <span className="pill">{summary.source}</span>{" "}
             Teams: {summary.teams.join(", ") || "—"}
           </p>
+
+          {skippedTotal > 0 && (
+            <div className="error">
+              {summary.skipped.unknown_run_pass > 0 && (
+                <p>
+                  {summary.skipped.unknown_run_pass} plays were skipped because
+                  run or pass couldn't be determined
+                  {summary.unresolved_play_names.length > 0 && (
+                    <>: {summary.unresolved_play_names.join(", ")}</>
+                  )}
+                  . Add a PLAY TYPE column (Run/Pass) to your export to include
+                  them.
+                </p>
+              )}
+              {summary.skipped.no_down > 0 && (
+                <p>{summary.skipped.no_down} rows had no down and were skipped.</p>
+              )}
+            </div>
+          )}
 
           {hasUnmapped ? (
             <>
@@ -119,6 +186,40 @@ export default function Upload() {
           )}
         </div>
       )}
+
+      <div className="card">
+        <h1 style={{ fontSize: 16 }}>Uploads in {activeTeam.name}</h1>
+        {uploads.length === 0 ? (
+          <div className="muted">Nothing uploaded yet.</div>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>File</th>
+                <th>Format</th>
+                <th>Plays</th>
+                <th>Uploaded</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {uploads.map((u) => (
+                <tr key={u.id}>
+                  <td>{u.filename}</td>
+                  <td>{u.source}</td>
+                  <td>{u.n_plays}</td>
+                  <td>{new Date(u.created_at + "Z").toLocaleString()}</td>
+                  <td>
+                    <button className="secondary" onClick={() => remove(u)}>
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }

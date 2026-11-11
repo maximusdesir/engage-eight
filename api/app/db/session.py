@@ -1,23 +1,58 @@
 """Database engine, session factory, and Base class."""
 from __future__ import annotations
 
-from sqlalchemy import create_engine
+from pathlib import Path
+
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-from ..config import settings
+from ..config import API_ROOT, settings
 
-# check_same_thread is a SQLite-only flag; harmless to pass conditionally.
-connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
+_is_sqlite = settings.database_url.startswith("sqlite")
+# check_same_thread is a SQLite-only flag.
+connect_args = {"check_same_thread": False} if _is_sqlite else {}
 
 engine = create_engine(settings.database_url, connect_args=connect_args, future=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+
+if _is_sqlite:
+    # SQLite ignores ON DELETE CASCADE unless foreign keys are switched on per
+    # connection. Deleting an upload or team relies on the cascade.
+    @event.listens_for(engine, "connect")
+    def _enable_sqlite_fks(dbapi_conn, _record):
+        cur = dbapi_conn.cursor()
+        cur.execute("PRAGMA foreign_keys=ON")
+        cur.close()
 
 
 class Base(DeclarativeBase):
     pass
 
 
+class LegacyDatabaseError(RuntimeError):
+    pass
+
+
 def init_db() -> None:
-    """Create all tables. Called on app startup for the SQLite dev setup."""
+    """Bring the database schema up to date (``alembic upgrade head``)."""
+    from alembic import command
+    from alembic.config import Config
+    from sqlalchemy import inspect
+
     from . import models  # noqa: F401  (register models on Base.metadata)
-    Base.metadata.create_all(bind=engine)
+
+    tables = set(inspect(engine).get_table_names())
+    if "plays" in tables and "alembic_version" not in tables:
+        # Pre-migration database: its plays have no owning team, so they
+        # can't be assigned safely. Refuse rather than guess.
+        raise LegacyDatabaseError(
+            "This database predates team-scoped plays and migrations "
+            f"({settings.database_url}). Its plays have no owner and can't be "
+            "migrated. Back it up and delete it (local dev: rm api/engage8.db), "
+            "then start the API again and re-upload your CSVs."
+        )
+
+    cfg = Config(str(API_ROOT / "alembic.ini"))
+    cfg.set_main_option("script_location", str(Path(API_ROOT) / "migrations"))
+    cfg.set_main_option("sqlalchemy.url", settings.database_url.replace("%", "%%"))
+    command.upgrade(cfg, "head")

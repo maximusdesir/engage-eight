@@ -1,7 +1,9 @@
 """Pydantic v2 schemas for authentication: users and tokens."""
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+from app.config import settings
 
 
 class UserCreate(BaseModel):
@@ -13,7 +15,11 @@ class UserCreate(BaseModel):
     """
 
     email: EmailStr
-    password: str
+    password: str = Field(
+        min_length=settings.min_password_length,
+        max_length=128,
+        description=f"At least {settings.min_password_length} characters.",
+    )
 
 
 class UserOut(BaseModel):

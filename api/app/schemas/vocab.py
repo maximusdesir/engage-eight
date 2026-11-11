@@ -1,7 +1,7 @@
 """Pydantic schemas for the per-team formation/motion vocabulary endpoints."""
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class CanonicalOptions(BaseModel):
@@ -24,8 +24,8 @@ class MappingIn(BaseModel):
     """One raw->canonical mapping to upsert."""
 
     kind: str              # formation | motion
-    raw_value: str
-    canonical_value: str
+    raw_value: str = Field(min_length=1, max_length=80)
+    canonical_value: str = Field(min_length=1, max_length=40)
 
     @field_validator("kind")
     @classmethod

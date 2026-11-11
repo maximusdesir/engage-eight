@@ -1,8 +1,8 @@
 """Engage Eight API entrypoint.
 
-Run locally:
+Run locally (dev mode allows the placeholder JWT secret):
     cd api
-    uvicorn app.main:app --reload
+    ENGAGE8_DEBUG=true uvicorn app.main:app --reload
 Then open http://localhost:8000/docs
 """
 from __future__ import annotations
@@ -19,7 +19,7 @@ from .routers import auth, plays, predict, teams, tendencies, uploads, vocab
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db()          # create SQLite tables on startup
+    init_db()          # alembic upgrade head
     yield
 
 

@@ -1,0 +1,10 @@
+**/__pycache__
+**/*.pyc
+.git
+.venv
+**/.venv
+ml/data
+ml/tests
+web
+api/*.db
+**/.env

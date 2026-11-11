@@ -39,14 +39,11 @@ export default function Tendencies() {
   const [loading, setLoading] = useState(false);
 
   const load = async () => {
+    if (!activeTeam) return;
     setError(null);
     setLoading(true);
     try {
-      const res = await api.tendencies(
-        split,
-        teamFilter || null,
-        activeTeam?.id ?? null
-      );
+      const res = await api.tendencies(activeTeam.id, split, teamFilter || null);
       setRows(res.rows);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to load");
@@ -61,12 +58,22 @@ export default function Tendencies() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [split, activeTeam?.id]);
 
+  if (!activeTeam) {
+    return (
+      <div>
+        <h1>Tendencies</h1>
+        <p className="subtitle">Create or select a team first (Teams screen).</p>
+      </div>
+    );
+  }
+
   return (
     <div>
       <h1>Tendencies</h1>
       <p className="subtitle">
-        What they like to do, by situation. Formation and motion buckets use the
-        active team's vocabulary mapping.
+        What they like to do, by situation, from the plays uploaded to{" "}
+        {activeTeam.name}. Formation and motion buckets use this team's
+        vocabulary mapping.
       </p>
 
       <div className="card">
@@ -126,7 +133,7 @@ export default function Tendencies() {
                   <td>
                     <RunPassBar run={r.run_pct} pass={r.pass_pct} />
                   </td>
-                  <td>{r.explosive_pct}%</td>
+                  <td>{r.explosive_pct == null ? "—" : `${r.explosive_pct}%`}</td>
                   <td>{r.avg_epa ?? "—"}</td>
                   <td>{r.top_play}</td>
                 </tr>

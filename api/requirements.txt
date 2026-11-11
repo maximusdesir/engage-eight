@@ -2,6 +2,8 @@
 fastapi>=0.110
 uvicorn[standard]>=0.27
 sqlalchemy>=2.0
+alembic>=1.13                    # migrations
+psycopg[binary]>=3.1             # Postgres driver (ENGAGE8_DATABASE_URL=postgresql+psycopg://...)
 pydantic>=2.6
 pydantic-settings>=2.1
 python-jose[cryptography]>=3.3   # JWT
@@ -16,4 +18,3 @@ numpy>=1.24
 pyarrow>=14.0
 scikit-learn>=1.3
 lightgbm>=4.0
-joblib>=1.3

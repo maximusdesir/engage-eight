@@ -7,20 +7,13 @@ a mapping updates tendencies/predictions without re-importing.
 """
 from __future__ import annotations
 
-import sys
-
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.config import settings
-from app.db.models import Play, VocabMapping
-
-# Make the engage8 ml package importable (mirrors services/tendencies.py).
-_ml_root = str(settings.ml_root)
-if _ml_root not in sys.path:
-    sys.path.insert(0, _ml_root)
-
+import app.ml  # noqa: F401  (puts engage8 on sys.path)
 from engage8 import vocab as ml_vocab  # noqa: E402
+
+from app.db.models import Play, VocabMapping
 
 VOCAB_KINDS = ("formation", "motion")
 
@@ -94,21 +87,26 @@ def _dedup(values) -> list[str]:
 
 def unmapped_values(
     db: Session,
+    team_id: int,
     team: str | None = None,
     formation_map: dict[str, str] | None = None,
     motion_map: dict[str, str] | None = None,
+    upload_id: int | None = None,
 ) -> dict[str, list[str]]:
     """Raw formation/motion values on stored plays that still fall through.
 
     A value is "unmapped" when neither the team's mapping nor the built-in vocab
     recognizes it (``normalize_*`` returns a passthrough). This is what the
     Vocabulary screen (and later a picture picker) asks the coach to resolve.
+    Only this team workspace's plays are considered (optionally one upload).
     """
     fmap = formation_map or {}
     mmap = motion_map or {}
 
     def _distinct(column):
-        stmt = select(column).distinct()
+        stmt = select(column).distinct().where(Play.team_id == team_id)
+        if upload_id is not None:
+            stmt = stmt.where(Play.upload_id == upload_id)
         if team is not None:
             stmt = stmt.where(Play.offense_team == team)
         return [v for v in db.scalars(stmt).all() if v is not None]

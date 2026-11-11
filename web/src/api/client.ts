@@ -80,23 +80,37 @@ export type TendencyRow = {
   plays: number;
   run_pct: number;
   pass_pct: number;
-  explosive_pct: number;
+  explosive_pct: number | null;
   avg_epa: number | null;
   top_play: string;
 };
 export type TendencyResponse = {
+  team_id: number;
   team: string | null;
   split: string;
   rows: TendencyRow[];
 };
 
 export type UploadSummary = {
+  upload_id: number;
   inserted: number;
   teams: string[];
   source: string;
   message: string;
   unmapped_formations: string[];
   unmapped_motions: string[];
+  skipped: Record<string, number>;
+  unresolved_play_names: string[];
+};
+
+export type UploadRecord = {
+  id: number;
+  team_id: number;
+  opponent_id: number | null;
+  filename: string;
+  source: string;
+  n_plays: number;
+  created_at: string;
 };
 
 export type PredictRequest = {
@@ -104,31 +118,42 @@ export type PredictRequest = {
   distance: number;
   yardline_100: number;
   quarter?: number;
-  game_seconds_remaining?: number;
+  game_seconds_remaining?: number | null;
   score_differential?: number;
+  shotgun?: boolean | null;
+  no_huddle?: boolean | null;
+  // Opponent blend: uses this team's uploaded plays for offense_team.
+  team_id?: number | null;
+  offense_team?: string | null;
   formation?: string | null;
   motion_type?: string | null;
-  offense_team?: string | null;
+};
+export type BlendStep = {
+  label: string;
+  plays: number;
+  pass_rate: number;
+  pass_prob_after: number;
 };
 export type PredictResponse = {
   pass_prob: number;
   run_prob: number;
-  lean: string;
+  lean: "RUN" | "PASS";
   confidence: number;
   why: string;
+  model_pass_prob: number;
+  blend: BlendStep[];
 };
 export type DefensiveCall = {
   front: string;
   coverage: string;
   pressure: string;
   stunt: string;
-  confidence: number;
-  expected_epa_prevented: number;
   rationale: string;
 };
 export type RecommendResponse = {
   predicted: PredictResponse;
   recommendations: DefensiveCall[];
+  basis: string;
 };
 
 export type VocabMapping = {
@@ -180,28 +205,29 @@ export const api = {
   createTeam: (name: string, level: string, season: number | null) =>
     request<Team>("/teams", { body: { name, level, season } }),
 
-  upload: (file: File, source: string, team: string | null) => {
+  // Everything below is scoped to one of the signed-in user's teams.
+  upload: (teamId: number, file: File, source: string, team: string | null) => {
     const fd = new FormData();
     fd.append("file", file);
     fd.append("source", source);
     if (team) fd.append("team", team);
-    return request<UploadSummary>("/uploads", { formData: fd });
+    return request<UploadSummary>(`/teams/${teamId}/uploads`, { formData: fd });
   },
+  listUploads: (teamId: number) =>
+    request<UploadRecord[]>(`/teams/${teamId}/uploads`),
+  deleteUpload: (teamId: number, uploadId: number) =>
+    request<void>(`/teams/${teamId}/uploads/${uploadId}`, { method: "DELETE" }),
 
-  tendencies: (split: Split, team: string | null, teamId: number | null) => {
-    // Sent with auth (default): team_id applies that team's private
-    // formation/motion mapping and the API requires an owning, authenticated
-    // caller for that case. Split-only requests remain public server-side.
+  tendencies: (teamId: number, split: Split, team: string | null) => {
     const p = new URLSearchParams({ split });
     if (team) p.set("team", team);
-    if (teamId != null) p.set("team_id", String(teamId));
-    return request<TendencyResponse>(`/tendencies?${p.toString()}`);
+    return request<TendencyResponse>(`/teams/${teamId}/tendencies?${p.toString()}`);
   },
 
   predict: (req: PredictRequest) =>
-    request<PredictResponse>("/predict", { body: req, auth: false }),
+    request<PredictResponse>("/predict", { body: req }),
   recommend: (req: PredictRequest) =>
-    request<RecommendResponse>("/recommend", { body: req, auth: false }),
+    request<RecommendResponse>("/recommend", { body: req }),
 
   getVocab: (teamId: number, team: string | null) => {
     const p = new URLSearchParams();

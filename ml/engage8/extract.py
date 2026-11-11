@@ -29,6 +29,7 @@ def fetch_nflverse(seasons: list[int]) -> pd.DataFrame:
     Python. This is the same underlying nflfastR data.
     """
     import urllib.request
+    config.ensure_data_dirs()
 
     frames = []
     for season in seasons:
@@ -51,7 +52,10 @@ def fetch_nflverse(seasons: list[int]) -> pd.DataFrame:
 def normalize_nflverse(pbp: pd.DataFrame) -> pd.DataFrame:
     """Map raw nflfastR columns into the canonical Play schema.
 
-    We keep only true scrimmage run/pass plays (the v1 prediction target).
+    We keep only true scrimmage run/pass plays. The label is the *called*
+    play: ``qb_dropback`` marks dropbacks, so scrambles and sacks count as
+    pass. (nflverse's ``play_type`` files scrambles under "run", which put
+    designed passes in the run class, about 7% of "runs".)
     """
     # Only run/pass scrimmage plays with a real down.
     mask = (
@@ -87,8 +91,11 @@ def normalize_nflverse(pbp: pd.DataFrame) -> pd.DataFrame:
     out["formation"] = df.get("offense_formation")  # present in some seasons
     out["backfield"] = pd.NA
     out["motion_type"] = pd.NA
+    out["shotgun"] = df["shotgun"].astype("Int64")
+    out["no_huddle"] = df["no_huddle"].astype("Int64")
 
-    out["play_type"] = df["play_type"]  # run | pass
+    dropback = df["qb_dropback"].fillna(df["play_type"].eq("pass").astype(float))
+    out["play_type"] = np.where(dropback == 1, "pass", "run")
     out["play_family"] = pd.NA
     out["pass_concept"] = pd.NA
     out["run_concept"] = pd.NA
@@ -99,7 +106,7 @@ def normalize_nflverse(pbp: pd.DataFrame) -> pd.DataFrame:
 
     # Explosive: yardage threshold by play type.
     thresh = np.where(
-        df["play_type"] == "run",
+        out["play_type"] == "run",
         config.EXPLOSIVE_RUN_YARDS,
         config.EXPLOSIVE_PASS_YARDS,
     )

@@ -1,28 +1,24 @@
 """Run/pass prediction service.
 
-Reuses the trained LightGBM artifact from the sibling ``ml`` project. The
-artifact is loaded once (lazily, on first request) and cached for the lifetime
-of the process so we never pay the joblib load cost per request.
+Loads the committed model from ``ml/models`` once per process and scores
+situations with it. When the caller names an opponent in one of their teams,
+the league prediction is blended with that opponent's uploaded plays (see
+``services/blend.py``).
 """
 from __future__ import annotations
 
-import sys
 from functools import lru_cache
 
 from fastapi import HTTPException, status
 
-from app.config import settings
+import app.ml  # noqa: F401  (puts engage8 on sys.path)
+from engage8.predict import (  # noqa: E402
+    ModelNotFound, load_model, predict_proba, predict_situation,
+)
 
-# Make the engage8 ml package importable. settings.ml_root points at ../ml.
-_ml_root = str(settings.ml_root)
-if _ml_root not in sys.path:
-    sys.path.insert(0, _ml_root)
-
-from engage8.predict import load_model, predict_situation  # noqa: E402
-
-# Request fields we forward to predict_situation. Anything None is dropped so
-# the ml layer can fall back to its own neutral defaults.
-_PASSTHROUGH = (
+# Request fields forwarded to the model. Formation/motion/team are not model
+# inputs; they only select which uploaded plays the blend uses.
+MODEL_INPUTS = (
     "down",
     "distance",
     "yardline_100",
@@ -30,50 +26,36 @@ _PASSTHROUGH = (
     "game_seconds_remaining",
     "score_differential",
     "posteam_timeouts",
-    "formation",
-    "personnel",
-    "motion_type",
-    "hash",
-    "offense_team",
+    "shotgun",
+    "no_huddle",
 )
 
 
 @lru_cache(maxsize=1)
-def _get_artifact() -> dict:
-    """Load the trained artifact once.
-
-    ``load_model`` raises ``SystemExit`` when the model file is missing; we
-    translate that into a clean 503 so the API stays up even before the ml
-    pipeline has been run.
-    """
+def get_artifact() -> dict:
+    """Load the trained model once. A missing model becomes a clean 503."""
     try:
         return load_model()
-    except SystemExit as exc:  # model file not present
+    except ModelNotFound as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Model not trained yet; run the ml pipeline.",
+            detail="Model not found; run the ml pipeline (python -m engage8.train).",
         ) from exc
+
+
+def model_kwargs(game_state: dict) -> dict:
+    kw = {k: game_state[k] for k in MODEL_INPUTS if game_state.get(k) is not None}
+    for flag in ("shotgun", "no_huddle"):
+        if flag in kw:
+            kw[flag] = int(kw[flag])
+    return kw
 
 
 def predict(game_state: dict) -> dict:
-    """Map request fields onto predict_situation kwargs and score the play.
+    """League-model prediction: pass_prob, run_prob, lean, confidence, why."""
+    return predict_situation(get_artifact(), **model_kwargs(game_state))
 
-    Returns the ml dict: pass_prob, run_prob, lean, confidence, why.
-    """
-    artifact = _get_artifact()
 
-    kw = {
-        key: game_state[key]
-        for key in _PASSTHROUGH
-        if game_state.get(key) is not None
-    }
-
-    try:
-        return predict_situation(artifact, **kw)
-    except HTTPException:
-        raise
-    except Exception as exc:  # noqa: BLE001 - surface a clean error
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Prediction failed: {exc}",
-        ) from exc
+def predict_many(situations: list[dict]):
+    """Calibrated pass probabilities for many situations (numpy array)."""
+    return predict_proba(get_artifact(), situations)

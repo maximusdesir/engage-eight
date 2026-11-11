@@ -1,35 +1,37 @@
 """Feature engineering: canonical plays -> model-ready feature table.
 
-Builds the situational features plus engineered "previous N plays" lag
-features (the GBM's substitute for a sequence model). Reads
+Builds situational features from fields a coach knows before the snap. Reads
 plays.parquet, writes features.parquet.
+
+Previous-play lag features were tried and dropped: with prev1/prev2/drive index
+known they added 0.3 points of test accuracy (74.4% vs 74.1%, 2023), and sent
+blank (the usual case in the app) they scored below the model without them.
 
 Run:
     python -m engage8.features
 """
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
 
 from . import config
 
-# Feature columns the model consumes. Categorical columns are listed so the
-# trainer can hand them to LightGBM as categoricals.
-NUMERIC_FEATURES = [
+# Features the model consumes. Every one is known before the snap and can be
+# entered by a coach (or charted from film), so training and serving see the
+# same inputs. Formation/personnel/motion/hash are NOT model features: they are
+# null in the public NFL data, so the model could never learn from them. They
+# feed the per-opponent blend in the API instead (api/app/services/blend.py).
+SITUATION_FEATURES = [
     "down", "ydstogo", "yardline_100", "quarter", "half",
     "game_seconds_remaining", "score_differential", "posteam_timeouts",
     "is_goal_to_go", "is_red_zone", "is_two_minute", "is_third_and_long",
-    "is_short_yardage", "field_zone", "prev1_was_pass", "prev2_was_pass",
-    "prev3_pass_rate", "drive_play_index",
+    "is_short_yardage", "field_zone",
 ]
-CATEGORICAL_FEATURES = [
-    "offense_team", "formation", "personnel", "motion_type", "hash",
-]
-TARGET = "is_pass"          # 1 = pass, 0 = run
-EXPLOSIVE_TARGET = "explosive"
+PRESNAP_FLAGS = ["shotgun", "no_huddle"]
 
-ALL_FEATURES = NUMERIC_FEATURES + CATEGORICAL_FEATURES
+ALL_FEATURES = SITUATION_FEATURES + PRESNAP_FLAGS
+TARGET = "is_pass"          # 1 = called dropback, 0 = designed run
+EXPLOSIVE_TARGET = "explosive"
 
 
 def _field_zone(yardline_100: pd.Series) -> pd.Series:
@@ -59,37 +61,16 @@ def build_features(plays: pd.DataFrame) -> pd.DataFrame:
     df["is_short_yardage"] = (df["ydstogo"] <= 2).astype("Int64")
     df["field_zone"] = _field_zone(df["yardline_100"])
 
-    # --- Sequence / lag features (per drive within a game) -------------
-    # Sort so lags are chronological. game_seconds_remaining decreases.
-    df = df.sort_values(
-        ["game_id", "offense_team", "game_seconds_remaining"],
-        ascending=[True, True, False],
-    ).reset_index(drop=True)
-
-    grp = df.groupby(["game_id", "offense_team"], sort=False)
-    df["drive_play_index"] = grp.cumcount().astype("Int64")
-    is_pass = df["is_pass"]
-    df["prev1_was_pass"] = grp["is_pass"].shift(1)
-    df["prev2_was_pass"] = grp["is_pass"].shift(2)
-    # Rolling pass rate over the previous 3 plays (excludes current).
-    df["prev3_pass_rate"] = (
-        grp["is_pass"].apply(
-            lambda s: s.shift(1).rolling(3, min_periods=1).mean()
-        ).reset_index(level=[0, 1], drop=True)
-    )
-
-    # Ensure categorical dtypes for LightGBM.
-    for c in CATEGORICAL_FEATURES:
-        if c in df.columns:
-            df[c] = df[c].astype("category")
-
     keep = (
         ["play_id", "game_id", "season", "week"]
         + ALL_FEATURES
         + [TARGET, EXPLOSIVE_TARGET, "epa"]
     )
     keep = [c for c in keep if c in df.columns]
-    out = df[keep]
+    out = df[keep].copy()
+    for c in ALL_FEATURES:
+        if c in out.columns:
+            out[c] = pd.to_numeric(out[c], errors="coerce").astype("float64")
     print(f"Built features: {len(out):,} rows, {len(ALL_FEATURES)} features")
     return out
 
@@ -100,6 +81,7 @@ def main() -> None:
             f"{config.PLAYS_PARQUET} not found. Run `python -m engage8.extract` first."
         )
     plays = pd.read_parquet(config.PLAYS_PARQUET)
+    config.ensure_data_dirs()
     feats = build_features(plays)
     feats.to_parquet(config.FEATURES_PARQUET, index=False)
     print(f"Wrote {config.FEATURES_PARQUET}")

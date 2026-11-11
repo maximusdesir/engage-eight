@@ -1,0 +1,15 @@
+﻿PLAY #,ODK,QTR,SERIES,DN,DIST,HASH,YARD LN,PLAY TYPE,RESULT,GN/LS,EFF,OFF FORM,OFF PLAY,OFF STR,PLAY DIR,GAP,PASS ZONE,DEF FRONT,COVERAGE,BLITZ,2 MIN,MOTION,BACKFIELD
+1,K,1,,,,M,-35,KO,Touchback,,,,,,,,,,,,,,
+2,O,1,1,1,10,L,-25,Run,Rush,4,Y,Trips Rt,Inside Zone,R,R,B,,4-3 Over,3,,,,Gun
+3,O,1,1,2,6,L,-29,Pass,Complete,9,Y,Trips Rt,Stick,R,,,,4-3 Over,3,,,Jet Lt,Gun
+4,O,,1,1,10,M,-38,Run,Rush,-1,N,Pro Lt,Power,L,L,C,,4-3 Under,1,Y,,,UC
+5,O,,1,2,11,R,-37,Pass,Incomplete,0,N,Doubles,Mesh,,,,Short Mid,4-3 Over,3,,,,
+6,O,1,1,3,11,R,-37,Pass,Sack,-7,N,Empty,Four Verts,,,,,Nickel,1,Y,,,Gun
+7,K,1,,,,M,-30,Punt,Fair Catch,,,,,,,,,,,,,,
+8,D,1,,1,10,L,+40,Run,Rush,3,,,,,,,,,,,,,
+9,O,2,2,1,10,M,+45,Pass,Complete,22,Y,Trey,PA Power,R,,,Deep Rt,4-3 Over,2,,,Orbit,Pistol
+10,O,2,2,1,10,L,+23,Run,Rush,6,Y,Trips Lt,Outside Zone,L,L,D,,4-3 Over,3,,,,Gun
+11,O,2,2,2,4,L,+17,Run,Rush,17,Y,Heavy,Counter,R,R,C,,Goal Line,0,Y,,,UC
+12,O,2,2,1,G,M,+0,Extra Pt.,Good,,,,,,,,,,,,,,
+13,O,4,3,4,2,R,+33,Run,Rush,3,Y,Doubles,QB Sneak,,,,,4-4,1,Y,Y,,UC
+

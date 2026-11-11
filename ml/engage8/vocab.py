@@ -84,9 +84,15 @@ def _clean(raw) -> str | None:
     return s or None
 
 
+# QB alignment words some teams prefix onto formation names ("Gun Trips").
+# Shotgun is captured as its own field, so they're ignored for matching.
+_ALIGNMENT_TOKENS = {"GUN", "SG", "UC"}
+
+
 def _strip_direction(key: str) -> str:
     toks = [t for t in key.split() if t not in _DIRECTION_TOKENS]
-    return " ".join(toks)
+    rest = [t for t in toks if t not in _ALIGNMENT_TOKENS]
+    return " ".join(rest or toks)
 
 
 def _match(key: str, synonyms: dict[str, str], canonical: tuple[str, ...]) -> str | None:

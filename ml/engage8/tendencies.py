@@ -46,9 +46,20 @@ SPLITS = {
     # on read; the built-in synonyms below still apply offline (no mapping).
     "formation": lambda df: df["formation"].map(vocab.normalize_formation).fillna("(unknown)"),
     "motion": lambda df: df["motion_type"].map(vocab.normalize_motion).fillna("NONE"),
-    "quarter": lambda df: "Q" + df["quarter"].astype(str),
+    "quarter": lambda df: df["quarter"].map(
+        lambda q: "(unknown)" if pd.isna(q) else ("OT" if int(q) >= 5 else f"Q{int(q)}")),
     "hash": lambda df: df["hash"].fillna("(unknown)"),
 }
+
+
+def _pct_known(s: pd.Series):
+    known = pd.to_numeric(s, errors="coerce").dropna()
+    return round(float(known.mean()) * 100, 1) if len(known) else None
+
+
+def _mean_known(s: pd.Series, digits: int):
+    known = pd.to_numeric(s, errors="coerce").dropna()
+    return round(float(known.mean()), digits) if len(known) else None
 
 
 def tendency_table(plays: pd.DataFrame, split: str = "down_distance") -> pd.DataFrame:
@@ -75,8 +86,10 @@ def tendency_table(plays: pd.DataFrame, split: str = "down_distance") -> pd.Data
             "plays": n,
             "run_pct": round((1 - pass_rate) * 100, 1),
             "pass_pct": round(pass_rate * 100, 1),
-            "explosive_pct": round(g["explosive"].fillna(0).mean() * 100, 1),
-            "avg_epa": round(g["epa"].mean(), 3),
+            # Share of plays with known yardage that were explosive; None
+            # when no play in the bucket has yards charted.
+            "explosive_pct": _pct_known(g["explosive"]),
+            "avg_epa": _mean_known(g["epa"], 3),
             "top_play": top_play,
         })
     out = pd.DataFrame(rows).sort_values("plays", ascending=False).reset_index(drop=True)

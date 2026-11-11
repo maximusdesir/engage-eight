@@ -1,0 +1,44 @@
+# Local production-like stack: Postgres + API + web.
+#   export ENGAGE8_JWT_SECRET=$(openssl rand -hex 32)
+#   docker compose up --build
+# Web: http://localhost:8080   API: http://localhost:8000/docs
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: engage8
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-engage8}
+      POSTGRES_DB: engage8
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U engage8"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    environment:
+      ENGAGE8_JWT_SECRET: ${ENGAGE8_JWT_SECRET:?set ENGAGE8_JWT_SECRET (openssl rand -hex 32)}
+      ENGAGE8_DATABASE_URL: postgresql+psycopg://engage8:${POSTGRES_PASSWORD:-engage8}@db:5432/engage8
+      ENGAGE8_CORS_ORIGINS: '["http://localhost:8080"]'
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: web
+      args:
+        VITE_API_BASE_URL: http://localhost:8000
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+volumes:
+  db-data:

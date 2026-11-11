@@ -2,27 +2,46 @@
 
 Run:
     python -m engage8.predict --down 2 --distance 6 --yardline 38 \
-        --quarter 2 --clock 252 --score-diff 3 --formation SHOTGUN
+        --quarter 2 --clock 252 --score-diff 3 --shotgun
 
-Returns a calibrated pass probability + a plain-English "why".
+Returns a calibrated pass probability + a plain-English "why". The model only
+uses inputs it was trained on (situation + shotgun/no-huddle); team-specific
+formation and motion tendencies are layered on top by the API from a team's
+uploaded plays.
 """
 from __future__ import annotations
 
 import argparse
+import json
 
+import numpy as np
 import pandas as pd
 
 from . import config
 from .features import _field_zone
 
 
-def load_model():
-    if not config.MODEL_PATH.exists():
-        raise SystemExit(
+class ModelNotFound(FileNotFoundError):
+    pass
+
+
+def load_model() -> dict:
+    if not config.MODEL_PATH.exists() or not config.MODEL_META_PATH.exists():
+        raise ModelNotFound(
             f"{config.MODEL_PATH} not found. Train first: python -m engage8.train"
         )
-    import joblib
-    return joblib.load(config.MODEL_PATH)
+    import lightgbm as lgb
+
+    meta = json.loads(config.MODEL_META_PATH.read_text())
+    booster = lgb.Booster(model_file=str(config.MODEL_PATH))
+    return {"booster": booster, **meta}
+
+
+def default_clock(quarter: int) -> int:
+    """game_seconds_remaining with 10:00 left in the given quarter."""
+    if quarter >= 5:
+        return 600
+    return (4 - quarter) * 900 + 600
 
 
 def _situation_row(features: list[str], **kw) -> pd.DataFrame:
@@ -30,59 +49,66 @@ def _situation_row(features: list[str], **kw) -> pd.DataFrame:
     down = kw["down"]
     dist = kw["distance"]
     yard = kw["yardline_100"]
-    clock = kw.get("game_seconds_remaining", 1800)
-    quarter = kw.get("quarter", 2)
+    quarter = kw.get("quarter")
+    if quarter is None:
+        quarter = 2
+    clock = kw.get("game_seconds_remaining")
+    if clock is None:
+        clock = default_clock(quarter)
+    score = kw.get("score_differential")
+    timeouts = kw.get("posteam_timeouts")
 
     row = {
         "down": down, "ydstogo": dist, "yardline_100": yard,
         "quarter": quarter, "half": 1 if quarter <= 2 else 2,
         "game_seconds_remaining": clock,
-        "score_differential": kw.get("score_differential", 0),
-        "posteam_timeouts": kw.get("posteam_timeouts", 3),
+        "score_differential": 0 if score is None else score,
+        "posteam_timeouts": 3 if timeouts is None else timeouts,
         "is_goal_to_go": int(yard <= dist),
         "is_red_zone": int(yard <= 20),
         "is_two_minute": int(clock <= 120 or 1680 < clock <= 1800),
         "is_third_and_long": int(down == 3 and dist >= 7),
         "is_short_yardage": int(dist <= 2),
         "field_zone": int(_field_zone(pd.Series([yard])).iloc[0]),
-        # Lag features unknown for a cold one-off prediction -> neutral/NaN.
-        "prev1_was_pass": kw.get("prev1_was_pass", pd.NA),
-        "prev2_was_pass": kw.get("prev2_was_pass", pd.NA),
-        "prev3_pass_rate": kw.get("prev3_pass_rate", pd.NA),
-        "drive_play_index": kw.get("drive_play_index", pd.NA),
-        "offense_team": kw.get("offense_team", pd.NA),
-        "formation": kw.get("formation", pd.NA),
-        "personnel": kw.get("personnel", pd.NA),
-        "motion_type": kw.get("motion_type", pd.NA),
-        "hash": kw.get("hash", pd.NA),
+        # Unknown -> missing; LightGBM routes NaN the way it learned to.
+        "shotgun": kw.get("shotgun"),
+        "no_huddle": kw.get("no_huddle"),
     }
-    return pd.DataFrame([{f: row.get(f, pd.NA) for f in features}])
+    X = pd.DataFrame([{f: row.get(f) for f in features}])
+    return X.apply(pd.to_numeric, errors="coerce").astype("float64")
+
+
+def predict_proba(artifact: dict, situations: list[dict]) -> np.ndarray:
+    """Calibrated pass probability for many situations in one model call.
+
+    Each situation uses the same keys as ``predict_situation`` (down,
+    distance, yardline_100, and optional quarter, clock, score, flags).
+    Missing optional values fall back to the same defaults.
+    """
+    if not situations:
+        return np.array([])
+    X = pd.concat(
+        [_situation_row(artifact["features"], **kw) for kw in situations],
+        ignore_index=True,
+    )
+    raw = artifact["booster"].predict(X)
+    cal = artifact["calibration"]
+    return np.interp(raw, cal["x"], cal["y"])
 
 
 def predict_situation(artifact: dict, **kw) -> dict:
-    feats = artifact["features"]
-    cat = set(artifact["categorical_features"])
-    X = _situation_row(feats, **kw)
-    # Numeric features must be float (NaN ok, LightGBM handles missingness);
-    # categoricals must be category dtype.
-    for c in feats:
-        if c in cat:
-            X[c] = X[c].astype("category")
-        else:
-            X[c] = pd.to_numeric(X[c], errors="coerce").astype("float64")
+    p_pass = float(predict_proba(artifact, [kw])[0])
+    return summarize(p_pass, _explain(kw, p_pass))
 
-    raw = float(artifact["model"].predict_proba(X)[:, 1][0])
-    p_pass = float(artifact["calibrator"].predict([raw])[0])
+
+def summarize(p_pass: float, why: str) -> dict:
     p_run = 1.0 - p_pass
-
-    lean = "PASS" if p_pass >= 0.5 else "RUN"
-    conf = max(p_pass, p_run)
     return {
         "pass_prob": round(p_pass, 3),
         "run_prob": round(p_run, 3),
-        "lean": lean,
-        "confidence": round(conf, 3),
-        "why": _explain(kw, p_pass),
+        "lean": "PASS" if p_pass >= 0.5 else "RUN",
+        "confidence": round(max(p_pass, p_run), 3),
+        "why": why,
     }
 
 
@@ -95,8 +121,14 @@ def _explain(kw: dict, p_pass: float) -> str:
         bits.append("obvious passing down")
     if dist <= 2:
         bits.append("short yardage (run-leaning)")
+    if kw.get("shotgun") == 1:
+        bits.append("shotgun")
+    elif kw.get("shotgun") == 0:
+        bits.append("under center")
+    if kw.get("no_huddle") == 1:
+        bits.append("no huddle")
     lean = "pass" if p_pass >= 0.5 else "run"
-    return f"{', '.join(bits)}: {int(round(max(p_pass,1-p_pass)*100))}% {lean}."
+    return f"{', '.join(bits)}: {int(round(max(p_pass, 1 - p_pass) * 100))}% {lean}."
 
 
 def _ordinal(n: int) -> str:
@@ -110,20 +142,26 @@ def main() -> None:
     p.add_argument("--yardline", type=int, required=True,
                    help="Yards from opponent goal line (yardline_100)")
     p.add_argument("--quarter", type=int, default=2)
-    p.add_argument("--clock", type=int, default=1800,
-                   help="game_seconds_remaining (3600=kickoff, 0=end)")
+    p.add_argument("--clock", type=int, default=None,
+                   help="game_seconds_remaining (3600=kickoff, 0=end); "
+                        "default 10:00 left in --quarter")
     p.add_argument("--score-diff", type=int, default=0)
-    p.add_argument("--formation", type=str, default=None)
-    p.add_argument("--offense-team", type=str, default=None)
+    g = p.add_mutually_exclusive_group()
+    g.add_argument("--shotgun", dest="shotgun", action="store_const", const=1)
+    g.add_argument("--under-center", dest="shotgun", action="store_const", const=0)
+    p.add_argument("--no-huddle", dest="no_huddle", action="store_const", const=1)
     args = p.parse_args()
 
-    artifact = load_model()
+    try:
+        artifact = load_model()
+    except ModelNotFound as exc:
+        raise SystemExit(str(exc)) from exc
     result = predict_situation(
         artifact,
         down=args.down, distance=args.distance, yardline_100=args.yardline,
         quarter=args.quarter, game_seconds_remaining=args.clock,
-        score_differential=args.score_diff, formation=args.formation,
-        offense_team=args.offense_team,
+        score_differential=args.score_diff, shotgun=args.shotgun,
+        no_huddle=args.no_huddle,
     )
     print(f"\n  Pass: {result['pass_prob']:.0%}   Run: {result['run_prob']:.0%}")
     print(f"  Lean: {result['lean']}  (confidence {result['confidence']:.0%})")

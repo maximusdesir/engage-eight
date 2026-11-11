@@ -11,8 +11,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.db.models import User
-from app.deps import get_current_user, get_db
-from app.routers.teams import _get_owned_team
+from app.deps import get_current_user, get_db, get_owned_team
 from app.schemas.vocab import (
     CanonicalOptions,
     MappingIn,
@@ -35,10 +34,10 @@ def get_vocab(
 
     ``team`` optionally filters unmapped detection to one offense_team's plays.
     """
-    _get_owned_team(team_id, db, user)
+    get_owned_team(team_id, db, user)
     fmap, mmap = vocab_service.build_maps(db, team_id)
     unmapped = vocab_service.unmapped_values(
-        db, team=team, formation_map=fmap, motion_map=mmap
+        db, team_id, team=team, formation_map=fmap, motion_map=mmap
     )
     return VocabResponse(
         canonical=CanonicalOptions(**vocab_service.canonical_options()),
@@ -55,7 +54,7 @@ def set_vocab(
     user: User = Depends(get_current_user),
 ) -> list[MappingOut]:
     """Upsert one or more raw->canonical mappings for the team."""
-    _get_owned_team(team_id, db, user)
+    get_owned_team(team_id, db, user)
     saved = [
         vocab_service.upsert_mapping(
             db, team_id, m.kind, m.raw_value, m.canonical_value

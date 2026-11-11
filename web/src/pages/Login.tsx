@@ -47,8 +47,12 @@ export default function Login() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            minLength={mode === "signup" ? 10 : undefined}
             required
           />
+          {mode === "signup" && (
+            <small className="muted">At least 10 characters.</small>
+          )}
         </div>
         {error && <div className="error">{error}</div>}
         <button disabled={busy}>

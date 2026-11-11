@@ -10,6 +10,7 @@ The API must be running first (see `../api`):
 
 ```
 cd ../api
+cp .env.example .env                 # dev mode
 uvicorn app.main:app --reload        # serves http://localhost:8000
 ```
 
@@ -29,14 +30,21 @@ Copy `.env.example` to `.env.local` to override.
 
 ## Screens
 
+Everything except Predict works on the **active team** (picked in the sidebar):
+a private workspace holding your uploads, plays, and vocabulary mapping.
+
 - **Tendencies** — run/pass split + top play per bucket, split by down &
-  distance, field zone, formation, pre-snap motion, quarter, or hash. Formation
-  and motion buckets fold naming variants onto the canonical vocabulary using
-  the active team's mapping.
-- **Predict / Recommend** — score a pre-snap situation and get ranked defensive
-  calls. Formation/motion dropdowns come from the canonical vocabulary.
-- **Upload** — import a Hudl breakdown or manual charting CSV; unrecognized
-  formation/motion names are surfaced for mapping.
+  distance, field zone, formation, pre-snap motion, quarter, or hash, over the
+  active team's plays. Formation and motion buckets fold naming variants onto
+  the canonical vocabulary using the team's mapping.
+- **Predict / Recommend** — score a pre-snap situation (down, distance, field
+  position, quarter and clock, score, shotgun, no-huddle). Name an opponent you
+  uploaded film for, plus optionally their formation and motion, and the
+  prediction blends in their tendencies; each blend step is shown. Defensive
+  calls are rules-based suggestions with no score attached.
+- **Upload** — import a Hudl breakdown or manual charting CSV. Shows rows that
+  were skipped (e.g. play names that can't be called run or pass) and
+  unrecognized formation/motion names; lists past uploads with delete.
 - **Vocabulary** — map this team's raw formation/motion names onto the canonical
   vocabulary. Text-based today; `src/components/CanonicalPicker.tsx` is the seam
   for the planned picture/diagram picker (swap the `<select>` for a diagram grid
@@ -47,4 +55,5 @@ Copy `.env.example` to `.env.local` to override.
 
 ```
 npm run build      # tsc -b && vite build -> dist/
+docker build --build-arg VITE_API_BASE_URL=https://your-api -t engage-eight-web .
 ```
