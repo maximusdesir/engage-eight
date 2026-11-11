@@ -29,7 +29,7 @@ quarterback lined up, and it moved the call 30 points.
 
 ## Why I built it
 
-I play defense, and watching scout film is slow. The players I grew up watching,
+I've played football for a long time and the players I grew up watching,
 Luke Kuechly, Peyton Manning, Tom Brady, Ray Lewis, stood out because they knew
 what was coming before the ball was snapped. I wanted a tool that does some of
 that film work for me and lets me check my own pre-snap reads. I also think AI
