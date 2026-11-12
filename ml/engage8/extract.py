@@ -49,6 +49,19 @@ def fetch_nflverse(seasons: list[int]) -> pd.DataFrame:
     return pbp
 
 
+def scrimmage_mask(pbp: pd.DataFrame) -> pd.Series:
+    """Rows kept as run/pass scrimmage plays with a real down and spot.
+
+    Shared with quiz.py so it picks from exactly the plays the model sees.
+    """
+    return (
+        pbp["play_type"].isin(["run", "pass"])
+        & pbp["down"].notna()
+        & pbp["ydstogo"].notna()
+        & pbp["yardline_100"].notna()
+    )
+
+
 def normalize_nflverse(pbp: pd.DataFrame) -> pd.DataFrame:
     """Map raw nflfastR columns into the canonical Play schema.
 
@@ -57,14 +70,7 @@ def normalize_nflverse(pbp: pd.DataFrame) -> pd.DataFrame:
     pass. (nflverse's ``play_type`` files scrambles under "run", which put
     designed passes in the run class, about 7% of "runs".)
     """
-    # Only run/pass scrimmage plays with a real down.
-    mask = (
-        pbp["play_type"].isin(["run", "pass"])
-        & pbp["down"].notna()
-        & pbp["ydstogo"].notna()
-        & pbp["yardline_100"].notna()
-    )
-    df = pbp.loc[mask].copy()
+    df = pbp.loc[scrimmage_mask(pbp)].copy()
 
     out = pd.DataFrame(index=df.index)
     out["play_id"] = df["play_id"].astype("Int64").astype(str)
