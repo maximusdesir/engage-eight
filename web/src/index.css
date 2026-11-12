@@ -108,3 +108,22 @@ tbody tr:hover { background: var(--panel-2); }
 .big-prob { font-size: 40px; font-weight: 800; }
 .lean-run { color: var(--run); }
 .lean-pass { color: var(--pass); }
+
+/* Public quiz */
+.quiz-wrap { max-width: 620px; margin: 0 auto; padding: 24px 16px 40px; }
+.quiz-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+.quiz-head .brand { margin-bottom: 0; }
+.quiz-score { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 15px; }
+.quiz-down { font-size: 34px; font-weight: 800; }
+.quiz-facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.quiz-buttons { display: flex; gap: 12px; }
+.quiz-buttons button { flex: 1; padding: 16px; font-size: 18px; font-weight: 700; color: #06120a; }
+.quiz-run { background: var(--run); }
+.quiz-pass { background: var(--pass); }
+.quiz-verdict { font-size: 16px; margin: 0 0 8px; }
+.quiz-desc { margin: 0 0 14px; line-height: 1.45; }
+.quiz-foot { font-size: 12px; margin-top: 22px; }
+kbd {
+  font: inherit; font-size: 11px; opacity: 0.7; margin-left: 6px;
+  border: 1px solid currentColor; border-radius: 4px; padding: 0 5px;
+}

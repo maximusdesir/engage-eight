@@ -6,6 +6,7 @@ import Upload from "./pages/Upload";
 import Tendencies from "./pages/Tendencies";
 import Predict from "./pages/Predict";
 import Vocabulary from "./pages/Vocabulary";
+import Quiz from "./pages/Quiz";
 
 function TeamPicker() {
   const { teams, activeTeam, setActiveTeam } = useStore();
@@ -73,9 +74,19 @@ function Shell() {
   );
 }
 
-export default function App() {
+function Gate() {
   const { user, loading } = useStore();
   if (loading) return <div style={{ padding: 40 }}>Loading…</div>;
   if (!user) return <Login />;
   return <Shell />;
+}
+
+export default function App() {
+  // /quiz is public: static JSON, no login and no API.
+  return (
+    <Routes>
+      <Route path="/quiz" element={<Quiz />} />
+      <Route path="*" element={<Gate />} />
+    </Routes>
+  );
 }
