@@ -35,7 +35,6 @@ quarterback lined up, and it moved the call 30 points.
 
 The quiz needs no login. It deals real 2023 plays the model never trained on,
 you call run or pass, and it shows what happened and what the model said.
-(The picture above is drawn by hand from one of those plays.)
 
 ## Why I built it
 
