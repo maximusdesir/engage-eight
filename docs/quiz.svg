@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="320" viewBox="0 0 760 320" role="img" aria-label="The Call it quiz. Left: 3rd and 6 at own 26, fourth quarter, leading by 14, under center, with Run and Pass buttons. Right: the reveal. It was a run, the player guessed pass, and the model gave 76% run.">
+  <style>
+    text { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 13px; fill: #e6edf3; white-space: pre; }
+    .brand { font-size: 16px; font-weight: 700; }
+    .muted { fill: #8b98a5; }
+    .small { font-size: 11px; }
+    .big { font-size: 30px; font-weight: 800; }
+    .pill { font-size: 12px; }
+    .btn { font-size: 16px; font-weight: 700; fill: #06120a; }
+    .kbd { font-size: 11px; font-weight: 400; fill: #06120a; opacity: 0.7; }
+    .run { fill: #3fb950; font-weight: 700; }
+    .bad { fill: #f85149; }
+    .barlabel { font-size: 11px; font-weight: 700; fill: #06120a; }
+  </style>
+
+  <!-- ===== Left: the question ===== -->
+  <rect width="370" height="320" rx="10" fill="#0f1419" stroke="#2c3846"/>
+  <text x="20" y="32" class="brand">Engage Eight</text>
+  <text x="20" y="48" class="muted small">Call it: run or pass?</text>
+
+  <text x="20" y="78">You <tspan font-weight="700">4</tspan>/6</text>
+  <text x="185" y="78" text-anchor="middle" class="muted">Play 7 of 10</text>
+  <text x="350" y="78" text-anchor="end">Model <tspan font-weight="700">5</tspan>/6</text>
+
+  <rect x="20" y="92" width="330" height="150" rx="10" fill="#1a2129" stroke="#2c3846"/>
+  <text x="38" y="130" class="big">3rd &amp; 6</text>
+  <text x="38" y="150" class="muted">at own 26</text>
+
+  <rect x="38" y="162" width="64" height="22" rx="11" fill="#222c37" stroke="#2c3846"/>
+  <text x="70" y="177" text-anchor="middle" class="pill">Q4 3:36</text>
+  <rect x="110" y="162" width="110" height="22" rx="11" fill="#222c37" stroke="#2c3846"/>
+  <text x="165" y="177" text-anchor="middle" class="pill">Leading by 14</text>
+  <rect x="228" y="162" width="84" height="22" rx="11" fill="#222c37" stroke="#2c3846"/>
+  <text x="270" y="177" text-anchor="middle" class="pill">2 timeouts</text>
+  <rect x="38" y="192" width="98" height="22" rx="11" fill="#222c37" stroke="#2c3846"/>
+  <text x="87" y="207" text-anchor="middle" class="pill">Under center</text>
+
+  <text x="38" y="232" class="muted small">ATL offense vs CAR, week 1</text>
+
+  <rect x="20" y="256" width="159" height="44" rx="6" fill="#3fb950"/>
+  <text x="99.500" y="284" text-anchor="middle" class="btn">Run <tspan class="kbd">R</tspan></text>
+  <rect x="191" y="256" width="159" height="44" rx="6" fill="#f0883e"/>
+  <text x="270.500" y="284" text-anchor="middle" class="btn">Pass <tspan class="kbd">P</tspan></text>
+
+  <!-- ===== Right: the reveal ===== -->
+  <g transform="translate(390 0)">
+    <rect width="370" height="320" rx="10" fill="#0f1419" stroke="#2c3846"/>
+    <text x="20" y="32" class="brand">Engage Eight</text>
+    <text x="20" y="48" class="muted small">Call it: run or pass?</text>
+
+    <text x="20" y="78">You <tspan font-weight="700">4</tspan>/7</text>
+    <text x="185" y="78" text-anchor="middle" class="muted">Play 7 of 10</text>
+    <text x="350" y="78" text-anchor="end">Model <tspan font-weight="700">6</tspan>/7</text>
+
+    <rect x="20" y="92" width="330" height="208" rx="10" fill="#1a2129" stroke="#2c3846"/>
+    <text x="38" y="120" class="bad">Wrong: it was a <tspan class="run">run</tspan><tspan class="bad">. You said pass.</tspan></text>
+    <text x="38" y="150">(3:36) 25-T.Allgeier left tackle to ATL 26</text>
+    <text x="38" y="168">for no gain (7-S.Thompson).</text>
+
+    <clipPath id="bar"><rect x="38" y="188" width="294" height="18" rx="4"/></clipPath>
+    <g clip-path="url(#bar)">
+      <rect x="38" y="188" width="294" height="18" fill="#222c37"/>
+      <rect x="38" y="188" width="223" height="18" fill="#3fb950"/>
+      <rect x="261" y="188" width="71" height="18" fill="#f0883e"/>
+    </g>
+    <text x="43" y="201" class="barlabel">Run 76%</text>
+    <text x="266" y="201" class="barlabel">Pass 24%</text>
+    <text x="38" y="226" class="muted small">The model said run (76%) and was right.</text>
+
+    <rect x="38" y="246" width="150" height="34" rx="6" fill="#4f9cf9"/>
+    <text x="113" y="268" text-anchor="middle" style="fill:#fff;font-size:14px">Next play <tspan style="fill:#fff;font-size:11px;opacity:0.7">Enter</tspan></text>
+  </g>
+</svg>

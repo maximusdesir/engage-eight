@@ -27,6 +27,16 @@ learns from five seasons of open NFL play-by-play and from your own Hudl film.
 Both are 3rd and 8 from the 45. The only thing that changed is where the
 quarterback lined up, and it moved the call 30 points.
 
+<p align="center">
+  <img src="docs/quiz.svg"
+       alt="The Call it quiz: a 3rd and 6 situation card with Run and Pass buttons, then the reveal showing the actual play and the model's 76% run"
+       width="760">
+</p>
+
+The quiz needs no login. It deals real 2023 plays the model never trained on,
+you call run or pass, and it shows what happened and what the model said.
+(The picture above is drawn by hand from one of those plays.)
+
 ## Why I built it
 
 I've played football for a long time and the players I grew up watching,
