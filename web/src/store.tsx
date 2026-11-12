@@ -1,30 +1,10 @@
 // App-wide state: the logged-in user and the "active team" (drives the team_id
 // used for vocabulary mapping and the offense_team filter used across screens).
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { api, getToken, setToken, type Team, type User } from "./api/client";
+import { Ctx, type Store } from "./useStore";
 
 const TEAM_KEY = "engage8_active_team_id";
-
-type Store = {
-  user: User | null;
-  loading: boolean;
-  teams: Team[];
-  activeTeam: Team | null;
-  setActiveTeam: (t: Team | null) => void;
-  refreshTeams: () => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string) => Promise<void>;
-  logout: () => void;
-};
-
-const Ctx = createContext<Store | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -97,10 +77,4 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     logout,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
-}
-
-export function useStore(): Store {
-  const s = useContext(Ctx);
-  if (!s) throw new Error("useStore must be used within StoreProvider");
-  return s;
 }

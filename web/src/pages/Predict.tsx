@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useStore } from "../store";
+import { useStore } from "../useStore";
 import {
   api,
   ApiError,
