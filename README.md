@@ -175,5 +175,6 @@ More in [ml/README.md](ml/README.md).
 
 ## Data and license
 
-Play-by-play data comes from [nflverse](https://github.com/nflverse). MIT
-license, see [LICENSE](LICENSE).
+Play-by-play data comes from [nflverse](https://github.com/nflverse), including
+the 2023 plays and play descriptions in the quiz. MIT license, see
+[LICENSE](LICENSE).
