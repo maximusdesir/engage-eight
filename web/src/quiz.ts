@@ -45,6 +45,9 @@ export function quarterClock(p: QuizPlay): string {
   return `${label} ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
+export const alignment = (p: QuizPlay) =>
+  `${p.shotgun ? "Shotgun" : "Under center"}${p.no_huddle === 1 ? ", no huddle" : ""}`;
+
 export function scoreText(p: QuizPlay): string {
   if (p.score_diff === 0) return "Tied";
   return p.score_diff > 0

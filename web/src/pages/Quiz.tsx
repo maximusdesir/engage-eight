@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
+  alignment,
   downAndDistance,
   fieldPosition,
   modelCall,
@@ -82,73 +83,102 @@ export default function Quiz() {
   const total = (key: keyof Result) => results.filter((r) => r[key]).length;
 
   return (
-    <div className="quiz-wrap">
-      <header className="quiz-head">
-        <div className="brand">
-          Engage Eight
-          <small>Call it: run or pass?</small>
-        </div>
-        <Link to="/">Sign in</Link>
-      </header>
+    <div className="quiz-page">
+      <div className="quiz-wrap">
+        <header className="quiz-head">
+          <span className="quiz-logo">Engage Eight</span>
+          <Link to="/">Sign in</Link>
+        </header>
 
-      {loadError && (
-        <div className="card error">Couldn't load the quiz plays. Try refreshing.</div>
-      )}
-      {!deck && !loadError && <div className="card muted">Loading plays…</div>}
+        {loadError && (
+          <p className="quiz-msg">Couldn't load the quiz plays. Try refreshing.</p>
+        )}
+        {!deck && !loadError && <p className="quiz-msg">Loading plays…</p>}
 
-      {play && summary && (
-        <RoundSummary results={results.slice(-ROUND)} onNext={next} />
-      )}
+        {play && summary && (
+          <RoundSummary results={results.slice(-ROUND)} onNext={next} />
+        )}
 
-      {play && !summary && (
-        <>
-          <div className="quiz-score">
-            <span>
-              You <b>{total("you")}</b>/{results.length}
-            </span>
-            <span className="muted">
-              Play {(pos % ROUND) + 1} of {ROUND}
-            </span>
-            <span>
-              Model <b>{total("model")}</b>/{results.length}
-            </span>
-          </div>
-
-          <div className="card">
-            <div className="quiz-down">{downAndDistance(play)}</div>
-            <div className="muted">at {fieldPosition(play)}</div>
-            <div className="quiz-facts">
-              <span className="pill">{quarterClock(play)}</span>
-              <span className="pill">{scoreText(play)}</span>
-              <span className="pill">{play.timeouts} timeouts</span>
-              <span className="pill">{play.shotgun ? "Shotgun" : "Under center"}</span>
-              {play.no_huddle === 1 && <span className="pill">No huddle</span>}
+        {play && !summary && (
+          <>
+            <div className="quiz-tally">
+              <Tally label="You" right={total("you")} of={results.length} />
+              <span className="quiz-prog">
+                Play {(pos % ROUND) + 1} of {ROUND}
+              </span>
+              <Tally label="Model" right={total("model")} of={results.length} end />
             </div>
-            <div className="muted" style={{ marginTop: 10, fontSize: 13 }}>
-              {play.offense} offense vs {play.defense}, week {play.week}
-            </div>
-          </div>
 
-          {!picked ? (
-            <div className="quiz-buttons">
-              <button className="quiz-run" onClick={() => answer("run")}>
-                Run <kbd>R</kbd>
-              </button>
-              <button className="quiz-pass" onClick={() => answer("pass")}>
-                Pass <kbd>P</kbd>
-              </button>
-            </div>
-          ) : (
-            <Reveal play={play} picked={picked} onNext={next} last={(pos + 1) % ROUND === 0} />
-          )}
-        </>
-      )}
+            <section className="quiz-situation">
+              <div className="quiz-down">{downAndDistance(play)}</div>
+              <div className="quiz-at">at {fieldPosition(play)}</div>
+              <dl className="quiz-facts">
+                <Fact label="Clock" value={quarterClock(play)} />
+                <Fact label="Score" value={scoreText(play)} />
+                <Fact label="Timeouts" value={String(play.timeouts)} />
+                <Fact label="Alignment" value={alignment(play)} />
+              </dl>
+              <p className="quiz-match">
+                {play.offense} offense vs {play.defense}, week {play.week}
+              </p>
+            </section>
 
-      <p className="muted quiz-foot">
-        Real 2023 NFL plays the model never trained on. Scrambles and sacks count
-        as passes. Data from{" "}
-        <a href="https://github.com/nflverse">nflverse</a>.
-      </p>
+            {!picked ? (
+              <div className="quiz-buttons">
+                <button className="quiz-btn run" onClick={() => answer("run")}>
+                  Run <kbd>R</kbd>
+                </button>
+                <button className="quiz-btn pass" onClick={() => answer("pass")}>
+                  Pass <kbd>P</kbd>
+                </button>
+              </div>
+            ) : (
+              <Reveal
+                play={play}
+                picked={picked}
+                onNext={next}
+                last={(pos + 1) % ROUND === 0}
+              />
+            )}
+          </>
+        )}
+
+        <p className="quiz-foot">
+          Real 2023 NFL plays the model never trained on. Scrambles and sacks count
+          as passes. Data from <a href="https://github.com/nflverse">nflverse</a>.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function Tally({
+  label,
+  right,
+  of,
+  end,
+}: {
+  label: string;
+  right: number;
+  of: number;
+  end?: boolean;
+}) {
+  return (
+    <div className={end ? "quiz-tally-side end" : "quiz-tally-side"}>
+      <small>{label}</small>
+      <b>
+        {right}
+        <i>/{of}</i>
+      </b>
+    </div>
+  );
+}
+
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt>{label}</dt>
+      <dd>{value}</dd>
     </div>
   );
 }
@@ -166,32 +196,32 @@ function Reveal({
 }) {
   const pass = Math.round(play.model_pass_prob * 100);
   const mc = modelCall(play);
+  const right = picked === play.actual;
   return (
-    <div className="card">
-      <div className={`quiz-verdict ${picked === play.actual ? "ok" : "error"}`}>
-        {picked === play.actual ? "Right" : "Wrong"}: it was a{" "}
-        <b className={play.actual === "pass" ? "lean-pass" : "lean-run"}>
-          {play.actual}
-        </b>
-        . You said {picked}.
+    <section className="quiz-reveal">
+      <div className="quiz-result">
+        <span className={right ? "quiz-badge right" : "quiz-badge wrong"}>
+          {right ? "Right" : "Wrong"}
+        </span>
+        You said {picked}.
       </div>
+      <div className={`quiz-call ${play.actual}`}>{play.actual}.</div>
       <p className="quiz-desc">{play.desc}</p>
-      <div className="bar" aria-label={`Model: ${pass}% pass`}>
-        <div className="run" style={{ width: `${100 - pass}%` }}>
-          <span>{100 - pass > 12 ? `Run ${100 - pass}%` : ""}</span>
-        </div>
-        <div className="pass" style={{ width: `${pass}%` }}>
-          <span>{pass > 12 ? `Pass ${pass}%` : ""}</span>
-        </div>
+      <div className="quiz-bar" role="img" aria-label={`Model: ${pass}% pass`}>
+        <i className="run" style={{ width: `${100 - pass}%` }} />
+        <i className="pass" style={{ width: `${pass}%` }} />
       </div>
-      <div className="muted" style={{ marginTop: 6, fontSize: 13 }}>
-        The model said {mc} ({Math.max(pass, 100 - pass)}%) and was{" "}
-        {mc === play.actual ? "right" : "wrong"}.
+      <div className="quiz-barlabels">
+        <span>Run {100 - pass}%</span>
+        <span>Pass {pass}%</span>
       </div>
-      <button style={{ marginTop: 14 }} onClick={onNext}>
+      <p className="quiz-note">
+        The model said {mc} and was {mc === play.actual ? "right" : "wrong"}.
+      </p>
+      <button className="quiz-btn next" onClick={onNext}>
         {last ? "See round results" : "Next play"} <kbd>Enter</kbd>
       </button>
-    </div>
+    </section>
   );
 }
 
@@ -205,17 +235,30 @@ function RoundSummary({
   const you = results.filter((r) => r.you).length;
   const model = results.filter((r) => r.model).length;
   const verdict =
-    you > model ? "You beat the model." : you === model ? "A tie with the model." : "The model wins this round.";
+    you > model
+      ? "You beat the model."
+      : you === model
+        ? "A tie with the model."
+        : "The model wins this round.";
   return (
-    <div className="card" style={{ textAlign: "center" }}>
-      <h1>Round complete</h1>
-      <div className="big-prob">
-        {you} vs {model}
+    <section className="quiz-reveal">
+      <div className="quiz-result">Round complete</div>
+      <div className="quiz-final">
+        <div>
+          <small>You</small>
+          <b>{you}</b>
+        </div>
+        <div className="end">
+          <small>Model</small>
+          <b>{model}</b>
+        </div>
       </div>
-      <p className="muted">
-        You got {you} of {results.length}, the model got {model}. {verdict}
+      <p className="quiz-note">
+        Out of {results.length} plays. {verdict}
       </p>
-      <button onClick={onNext}>Next round <kbd>Enter</kbd></button>
-    </div>
+      <button className="quiz-btn next" onClick={onNext}>
+        Next round <kbd>Enter</kbd>
+      </button>
+    </section>
   );
 }
