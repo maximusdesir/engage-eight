@@ -1,0 +1,285 @@
+﻿PLAY #,ODK,QTR,DN,DIST,HASH,YARD LN,OFF FORM,OFF PLAY,PLAY TYPE,RESULT,GN/LS,MOTION,BACKFIELD,OFF TEAM,DEF TEAM
+1,K,1,,,,-35,,,KO,Touchback,,,,Central HS (fictional),Northside
+2,O,1,1,10,L,-23,Trips Rt,Curl Flat,Pass,Complete,12,Orbit,Gun,Central HS (fictional),Northside
+3,O,1,1,10,L,-35,Empty,Four Verts,Pass,Complete,3,,Gun,Central HS (fictional),Northside
+4,O,1,2,7,R,-38,Doubles,Stick,Pass,Incomplete,0,,Gun,Central HS (fictional),Northside
+5,O,1,3,7,R,-38,Doubles,Curl Flat,Pass,Complete,13,Across,Gun,Central HS (fictional),Northside
+6,O,1,1,10,L,49,Trips Rt,Inside Zone,Run,Rush,4,Across,Gun,Central HS (fictional),Northside
+7,O,1,2,6,M,45,Pro Lt,Inside Zone,Run,Rush,2,,UC,Central HS (fictional),Northside
+8,O,1,3,4,M,43,Doubles,PA Boot,Pass,Incomplete,0,,Gun,Central HS (fictional),Northside
+9,K,1,,,,43,,,Punt,Fair Catch,,,,Central HS (fictional),Northside
+10,O,1,1,10,L,-36,Doubles,Jet Sweep,Run,Rush,4,Jet Rt,Gun,Central HS (fictional),Northside
+11,O,1,2,6,L,-40,I-Form,Iso,Run,Rush,9,,UC,Central HS (fictional),Northside
+12,O,1,1,10,R,-49,Pro Rt,Stick,Pass,Sack,-4,,UC,Central HS (fictional),Northside
+13,O,1,2,14,R,-45,Trips Lt,Duo,Run,Rush,0,,Gun,Central HS (fictional),Northside
+14,O,1,3,14,L,-45,Trips Lt,Jet Sweep,Run,Rush,2,Jet Lt,Gun,Central HS (fictional),Northside
+15,K,1,,,,-47,,,Punt,Fair Catch,,,,Central HS (fictional),Northside
+16,O,1,1,10,L,-39,Trips Lt,Smash,Pass,Complete,4,Orbit,Gun,Central HS (fictional),Northside
+17,O,2,2,6,M,-43,I-Form,Counter,Run,Rush,1,,UC,Central HS (fictional),Northside
+18,O,2,3,5,L,-44,Trips Rt,Duo,Run,Rush,2,,Gun,Central HS (fictional),Northside
+19,K,2,,,,-46,,,Punt,Fair Catch,,,,Central HS (fictional),Northside
+20,O,2,1,10,M,-29,Trips Rt,Inside Zone,Run,Rush,2,,Gun,Central HS (fictional),Northside
+21,O,2,2,8,L,-31,Pro Lt,Smash,Pass,Complete,15,,UC,Central HS (fictional),Northside
+22,O,2,1,10,R,-46,Empty,Mesh,Pass,Incomplete,0,,Gun,Central HS (fictional),Northside
+23,O,2,2,10,M,-46,Trips Rt,Inside Zone,Run,Rush,2,,Gun,Central HS (fictional),Northside
+24,O,2,3,8,M,-48,Trips Lt,Slant,Pass,Complete,4,,Gun,Central HS (fictional),Northside
+25,K,2,,,,48,,,Punt,Fair Catch,,,,Central HS (fictional),Northside
+26,O,2,1,10,M,-41,Empty,Four Verts,Pass,Complete,13,,Gun,Central HS (fictional),Northside
+27,O,2,1,10,R,46,Trips Rt,Outside Zone,Run,Rush,3,,Gun,Central HS (fictional),Northside
+28,O,2,2,7,L,43,Doubles,Jet Sweep,Run,Rush,9,Jet Lt,Gun,Central HS (fictional),Northside
+29,O,2,1,10,R,34,Empty,Smash,Pass,Complete,15,,Gun,Central HS (fictional),Northside
+30,O,2,1,10,R,19,Doubles,Duo,Run,Rush,2,Orbit,Gun,Central HS (fictional),Northside
+31,O,3,2,8,R,17,Empty,Slant,Pass,Incomplete,0,,Gun,Central HS (fictional),Northside
+32,O,3,3,8,M,17,Trips Rt,PA Boot,Pass,Complete,4,Orbit,Gun,Central HS (fictional),Northside
+33,K,3,,,,13,,,FG,Good,,,,Central HS (fictional),Northside
+34,O,3,1,10,M,-24,Trips Lt,Jet Sweep,Run,Rush,13,Jet Rt,Gun,Central HS (fictional),Northside
+35,O,3,1,10,M,-37,Doubles,Counter,Run,Rush,3,,Gun,Central HS (fictional),Northside
+36,O,3,2,7,M,-40,Trips Rt,PA Boot,Pass,Incomplete,0,Orbit,Gun,Central HS (fictional),Northside
+37,O,3,3,7,R,-40,Trips Lt,Screen,Pass,Complete,5,,Gun,Central HS (fictional),Northside
+38,K,3,,,,-45,,,Punt,Fair Catch,,,,Central HS (fictional),Northside
+39,O,3,1,10,M,-31,Trips Rt,Smash,Pass,Complete,7,,Gun,Central HS (fictional),Northside
+40,O,3,2,3,L,-38,Pro Rt,Smash,Pass,Complete,4,Across,UC,Central HS (fictional),Northside
+41,O,3,1,10,M,-42,Trips Rt,Jet Sweep,Run,Rush,0,Jet Lt,Gun,Central HS (fictional),Northside
+42,O,3,2,10,M,-42,Pro Lt,Counter,Run,Rush,7,,UC,Central HS (fictional),Northside
+43,O,3,3,3,M,-49,Trips Lt,Outside Zone,Run,Rush,3,,Gun,Central HS (fictional),Northside
+44,O,3,1,10,M,48,Empty,Four Verts,Pass,Incomplete,0,,Gun,Central HS (fictional),Northside
+45,O,3,2,10,M,48,Empty,Smash,Pass,Complete,7,,Gun,Central HS (fictional),Northside
+46,O,4,3,3,L,41,Doubles,Draw,Run,Rush,3,,Gun,Central HS (fictional),Northside
+47,O,4,1,10,L,38,Doubles,Jet Sweep,Run,Rush,3,Jet Lt,Gun,Central HS (fictional),Northside
+48,O,4,2,7,R,35,Trips Lt,PA Boot,Pass,Incomplete,0,Across,Gun,Central HS (fictional),Northside
+49,O,4,3,7,M,35,Trips Lt,Curl Flat,Pass,Incomplete,0,Across,Gun,Central HS (fictional),Northside
+50,O,4,4,7,R,35,Doubles,Counter,Run,Rush,4,Orbit,Gun,Central HS (fictional),Northside
+51,O,4,1,10,M,-41,I-Form,Screen,Pass,Incomplete,0,,UC,Central HS (fictional),Northside
+52,O,4,2,10,R,-41,Trips Rt,Slant,Pass,Complete,6,,Gun,Central HS (fictional),Northside
+53,O,4,3,4,M,-47,Trips Lt,Jet Sweep,Run,Rush,1,Jet Lt,Gun,Central HS (fictional),Northside
+54,K,4,,,,-48,,,Punt,Fair Catch,,,,Central HS (fictional),Northside
+55,O,4,1,10,R,-41,Trips Rt,Duo,Run,Rush,5,,Gun,Central HS (fictional),Northside
+56,O,4,2,5,M,-46,I-Form,Iso,Run,Rush,11,,UC,Central HS (fictional),Northside
+57,O,4,1,10,M,43,Trips Lt,Smash,Pass,Complete,6,,Gun,Central HS (fictional),Northside
+58,O,4,2,4,L,37,I-Form,Counter,Run,Rush,4,,UC,Central HS (fictional),Northside
+59,K,1,,,,-35,,,KO,Touchback,,,,Central HS (fictional),Lakeview
+60,O,1,1,10,M,-25,Doubles,Smash,Pass,Sack,-6,,Gun,Central HS (fictional),Lakeview
+61,O,1,2,16,M,-19,Empty,Mesh,Pass,Complete,15,,Gun,Central HS (fictional),Lakeview
+62,O,1,3,1,M,-34,I-Form,Counter,Run,Rush,4,,UC,Central HS (fictional),Lakeview
+63,O,1,1,10,M,-38,Pro Lt,Counter,Run,Rush,4,,UC,Central HS (fictional),Lakeview
+64,O,1,2,6,M,-42,Empty,Slant,Pass,Incomplete,0,,Gun,Central HS (fictional),Lakeview
+65,O,1,3,6,L,-42,I-Form,Screen,Pass,Incomplete,0,,UC,Central HS (fictional),Lakeview
+66,K,1,,,,-42,,,Punt,Fair Catch,,,,Central HS (fictional),Lakeview
+67,O,1,1,10,M,-34,Doubles,Jet Sweep,Run,Rush,6,Jet Lt,Gun,Central HS (fictional),Lakeview
+68,O,1,2,4,R,-40,I-Form,Inside Zone,Run,Rush,11,,UC,Central HS (fictional),Lakeview
+69,O,1,1,10,M,49,Trips Lt,Slant,Pass,Sack,-4,,Gun,Central HS (fictional),Lakeview
+70,O,1,2,14,M,-47,Empty,Four Verts,Pass,Incomplete,0,,Gun,Central HS (fictional),Lakeview
+71,O,1,3,14,L,-47,Pro Lt,Curl Flat,Pass,Complete,5,,UC,Central HS (fictional),Lakeview
+72,K,1,,,,48,,,Punt,Fair Catch,,,,Central HS (fictional),Lakeview
+73,O,1,1,10,L,-33,Empty,Four Verts,Pass,Complete,10,,Gun,Central HS (fictional),Lakeview
+74,O,1,1,10,L,-43,Trips Lt,Curl Flat,Pass,Incomplete,0,,Gun,Central HS (fictional),Lakeview
+75,O,2,2,10,M,-43,Trips Rt,PA Boot,Pass,Sack,-8,Orbit,Gun,Central HS (fictional),Lakeview
+76,O,2,3,18,R,-35,Trips Rt,PA Boot,Pass,Complete,3,,Gun,Central HS (fictional),Lakeview
+77,K,2,,,,-38,,,Punt,Fair Catch,,,,Central HS (fictional),Lakeview
+78,O,2,1,10,L,-37,Trips Rt,Outside Zone,Run,Rush,4,,Gun,Central HS (fictional),Lakeview
+79,O,2,2,6,R,-41,Pro Lt,Duo,Run,Rush,6,,UC,Central HS (fictional),Lakeview
+80,O,2,1,10,M,-47,Pro Rt,Draw,Run,Rush,6,,UC,Central HS (fictional),Lakeview
+81,O,2,2,4,L,47,Trips Lt,Counter,Run,Rush,2,,Gun,Central HS (fictional),Lakeview
+82,O,2,3,2,M,45,I-Form,Power,Run,Rush,1,,UC,Central HS (fictional),Lakeview
+83,O,2,4,1,M,44,Trips Rt,Draw,Run,Rush,6,,Gun,Central HS (fictional),Lakeview
+84,O,2,1,10,M,38,Doubles,Reverse,Run,Rush,3,Jet Rt,Gun,Central HS (fictional),Lakeview
+85,O,2,2,7,L,35,I-Form,Iso,Run,Rush,2,,UC,Central HS (fictional),Lakeview
+86,O,2,3,5,M,33,Heavy,Curl Flat,Pass,Complete,5,,UC,Central HS (fictional),Lakeview
+87,O,2,1,10,R,28,Empty,Four Verts,Pass,Complete,16,,Gun,Central HS (fictional),Lakeview
+88,O,3,1,10,M,12,Trips Lt,Screen,Pass,Complete,4,,Gun,Central HS (fictional),Lakeview
+89,O,3,2,6,L,8,Doubles,Screen,Pass,Complete TD,8,,Gun,Central HS (fictional),Lakeview
+90,K,3,,,,-35,,,KO,Touchback,,,,Central HS (fictional),Lakeview
+91,O,3,1,10,R,-38,Pro Lt,Jet Sweep,Run,Rush,3,Jet Lt,UC,Central HS (fictional),Lakeview
+92,O,3,2,7,M,-41,Doubles,Stick,Pass,Complete,9,Orbit,Gun,Central HS (fictional),Lakeview
+93,O,3,1,10,M,50,Trips Lt,Outside Zone,Run,Rush,5,,Gun,Central HS (fictional),Lakeview
+94,O,3,2,5,M,45,Pro Rt,Inside Zone,Run,Rush,4,,UC,Central HS (fictional),Lakeview
+95,O,3,3,1,R,41,I-Form,Iso,Run,Rush,3,,UC,Central HS (fictional),Lakeview
+96,O,3,1,10,L,38,I-Form,Power,Run,Rush,6,,UC,Central HS (fictional),Lakeview
+97,O,3,2,4,M,32,Empty,Four Verts,Pass,Incomplete,0,,Gun,Central HS (fictional),Lakeview
+98,O,3,3,4,L,32,Pro Lt,Duo,Run,Rush,0,,UC,Central HS (fictional),Lakeview
+99,K,3,,,,32,,,FG,Good,,,,Central HS (fictional),Lakeview
+100,O,3,1,10,R,-25,Empty,Mesh,Pass,Complete,3,,Gun,Central HS (fictional),Lakeview
+101,O,3,2,7,M,-28,Doubles,Counter,Run,Rush,7,Across,Gun,Central HS (fictional),Lakeview
+102,O,3,1,10,R,-35,Trips Lt,Reverse,Run,Rush,7,Jet Rt,Gun,Central HS (fictional),Lakeview
+103,O,4,2,3,L,-42,Trips Rt,Smash,Pass,Complete,16,,Gun,Central HS (fictional),Lakeview
+104,O,4,1,10,L,42,Doubles,Smash,Pass,Incomplete,0,,Gun,Central HS (fictional),Lakeview
+105,O,4,2,10,M,42,Empty,Four Verts,Pass,Complete,8,,Gun,Central HS (fictional),Lakeview
+106,O,4,3,2,R,34,I-Form,Iso,Run,Rush,3,,UC,Central HS (fictional),Lakeview
+107,O,4,1,10,L,31,Pro Rt,Jet Sweep,Run,Rush,9,Jet Rt,UC,Central HS (fictional),Lakeview
+108,O,4,2,1,M,22,Pro Lt,Inside Zone,Run,Rush,9,,UC,Central HS (fictional),Lakeview
+109,O,4,1,10,L,13,Doubles,Jet Sweep,Run,Rush,0,Jet Rt,Gun,Central HS (fictional),Lakeview
+110,O,4,2,10,R,13,Pro Rt,Smash,Pass,Incomplete,0,,UC,Central HS (fictional),Lakeview
+111,O,4,3,10,L,13,Pro Rt,Screen,Pass,Complete TD,13,Jet Lt,UC,Central HS (fictional),Lakeview
+112,K,4,,,,-35,,,KO,Touchback,,,,Central HS (fictional),Lakeview
+113,O,4,1,10,R,-32,I-Form,Slant,Pass,Complete,5,,UC,Central HS (fictional),Lakeview
+114,O,4,2,5,M,-37,Doubles,Counter,Run,Rush,3,Orbit,Gun,Central HS (fictional),Lakeview
+115,O,4,3,2,R,-40,Doubles,Reverse,Run,Rush,2,Jet Lt,Gun,Central HS (fictional),Lakeview
+116,K,1,,,,-35,,,KO,Touchback,,,,Central HS (fictional),Westfield
+117,O,1,1,10,R,-28,Doubles,Draw,Run,Rush,3,,Gun,Central HS (fictional),Westfield
+118,O,1,2,7,L,-31,I-Form,Power,Run,Rush,7,,UC,Central HS (fictional),Westfield
+119,O,1,1,10,R,-38,Trips Rt,Jet Sweep,Run,Rush,2,Jet Rt,Gun,Central HS (fictional),Westfield
+120,O,1,2,8,R,-40,Trips Rt,Curl Flat,Pass,Sack,-9,,Gun,Central HS (fictional),Westfield
+121,O,1,3,17,M,-31,Doubles,Curl Flat,Pass,Complete,8,,Gun,Central HS (fictional),Westfield
+122,K,1,,,,-39,,,Punt,Fair Catch,,,,Central HS (fictional),Westfield
+123,O,1,1,10,M,-38,Doubles,Slant,Pass,Incomplete,0,,Gun,Central HS (fictional),Westfield
+124,O,1,2,10,M,-38,Empty,Mesh,Pass,Complete,3,,Gun,Central HS (fictional),Westfield
+125,O,1,3,7,M,-41,Pro Rt,PA Boot,Pass,Incomplete,0,,UC,Central HS (fictional),Westfield
+126,K,1,,,,-41,,,Punt,Fair Catch,,,,Central HS (fictional),Westfield
+127,O,1,1,10,M,-25,Pro Rt,Inside Zone,Run,Rush,9,,UC,Central HS (fictional),Westfield
+128,O,1,2,1,R,-34,I-Form,Inside Zone,Run,Rush,5,,UC,Central HS (fictional),Westfield
+129,O,1,1,10,M,-39,Empty,Four Verts,Pass,Complete,5,,Gun,Central HS (fictional),Westfield
+130,O,1,2,5,M,-44,Empty,Draw,Run,Rush,2,,Gun,Central HS (fictional),Westfield
+131,O,1,3,3,L,-46,I-Form,Smash,Pass,Complete,7,,UC,Central HS (fictional),Westfield
+132,O,2,1,10,R,47,Pro Lt,Smash,Pass,Complete,2,,UC,Central HS (fictional),Westfield
+133,O,2,2,8,L,45,I-Form,Smash,Pass,Complete,1,,UC,Central HS (fictional),Westfield
+134,O,2,3,7,L,44,Trips Rt,Screen,Pass,Incomplete,0,,Gun,Central HS (fictional),Westfield
+135,O,2,4,7,M,44,Pro Lt,Draw,Run,Rush,11,,UC,Central HS (fictional),Westfield
+136,O,2,1,10,R,33,Empty,Mesh,Pass,Complete,8,,Gun,Central HS (fictional),Westfield
+137,O,2,2,2,R,25,I-Form,Toss,Run,Rush,2,,UC,Central HS (fictional),Westfield
+138,O,2,1,10,L,23,Pro Rt,Screen,Pass,Complete,13,,UC,Central HS (fictional),Westfield
+139,O,2,1,10,R,10,Doubles,Smash,Pass,Sack,-9,,Gun,Central HS (fictional),Westfield
+140,O,2,2,19,L,19,Trips Rt,Stick,Pass,Complete,8,,Gun,Central HS (fictional),Westfield
+141,O,2,3,11,R,11,Trips Rt,Curl Flat,Pass,Incomplete,0,,Gun,Central HS (fictional),Westfield
+142,K,2,,,,11,,,FG,Good,,,,Central HS (fictional),Westfield
+143,O,2,1,10,R,-26,Empty,Inside Zone,Run,Rush,7,,Gun,Central HS (fictional),Westfield
+144,O,2,2,3,M,-33,Empty,Counter,Run,Rush,1,,Gun,Central HS (fictional),Westfield
+145,O,3,3,2,M,-34,I-Form,Inside Zone,Run,Rush,9,,UC,Central HS (fictional),Westfield
+146,O,3,1,10,M,-43,Trips Rt,Smash,Pass,Complete,9,,Gun,Central HS (fictional),Westfield
+147,O,3,2,1,R,48,Heavy,Power,Run,Rush,3,,UC,Central HS (fictional),Westfield
+148,O,3,1,10,M,45,Trips Rt,Jet Sweep,Run,Rush,0,Jet Rt,Gun,Central HS (fictional),Westfield
+149,O,3,2,10,M,45,Trips Rt,Outside Zone,Run,Rush,1,,Gun,Central HS (fictional),Westfield
+150,O,3,3,9,R,44,Trips Rt,Reverse,Run,Rush,10,Jet Rt,Gun,Central HS (fictional),Westfield
+151,O,3,1,10,M,34,Pro Rt,PA Boot,Pass,Complete,10,,UC,Central HS (fictional),Westfield
+152,O,3,1,10,L,24,Doubles,Outside Zone,Run,Rush,3,,Gun,Central HS (fictional),Westfield
+153,O,3,2,7,R,21,Trips Rt,Draw,Run,Rush,5,,Gun,Central HS (fictional),Westfield
+154,O,3,3,2,L,16,Heavy,Power,Run,Rush,0,,UC,Central HS (fictional),Westfield
+155,K,3,,,,16,,,FG,Good,,,,Central HS (fictional),Westfield
+156,O,3,1,10,M,-30,Empty,Four Verts,Pass,Incomplete,0,,Gun,Central HS (fictional),Westfield
+157,O,3,2,10,L,-30,Trips Rt,Stick,Pass,Incomplete,0,,Gun,Central HS (fictional),Westfield
+158,O,3,3,10,L,-30,Doubles,Stick,Pass,Complete,15,Jet Lt,Gun,Central HS (fictional),Westfield
+159,O,4,1,10,M,-45,I-Form,Inside Zone,Run,Rush,2,,UC,Central HS (fictional),Westfield
+160,O,4,2,8,R,-47,Pro Rt,Outside Zone,Run,Rush,6,Orbit,UC,Central HS (fictional),Westfield
+161,O,4,3,2,M,47,I-Form,Power,Run,Rush,9,,UC,Central HS (fictional),Westfield
+162,O,4,1,10,R,38,Pro Rt,Outside Zone,Run,Rush,1,,UC,Central HS (fictional),Westfield
+163,O,4,2,9,R,37,Doubles,Jet Sweep,Run,Rush,4,Jet Rt,Gun,Central HS (fictional),Westfield
+164,O,4,3,5,M,33,Trips Rt,Jet Sweep,Run,Rush,5,Jet Rt,Gun,Central HS (fictional),Westfield
+165,O,4,1,10,R,28,Trips Rt,Slant,Pass,Complete,10,Orbit,Gun,Central HS (fictional),Westfield
+166,O,4,1,10,R,18,Empty,Four Verts,Pass,Incomplete,0,,Gun,Central HS (fictional),Westfield
+167,O,4,2,10,L,18,Pro Lt,Screen,Pass,Complete,8,,UC,Central HS (fictional),Westfield
+168,O,4,3,2,M,10,Doubles,Counter,Run,Rush,3,,Gun,Central HS (fictional),Westfield
+169,O,4,1,7,M,7,Trips Rt,Smash,Pass,Sack,-6,Jet Lt,Gun,Central HS (fictional),Westfield
+170,O,4,2,13,M,13,Pro Rt,Draw,Run,Rush,4,Orbit,UC,Central HS (fictional),Westfield
+171,K,1,,,,-35,,,KO,Touchback,,,,Central HS (fictional),Riverton
+172,O,1,1,10,R,-31,Doubles,Jet Sweep,Run,Rush,2,Jet Lt,Gun,Central HS (fictional),Riverton
+173,O,1,2,8,M,-33,Trips Lt,Reverse,Run,Rush,4,Jet Rt,Gun,Central HS (fictional),Riverton
+174,O,1,3,4,M,-37,Pro Rt,Inside Zone,Run,Rush,9,,UC,Central HS (fictional),Riverton
+175,O,1,1,10,M,-46,Doubles,Jet Sweep,Run,Rush,8,Jet Lt,Gun,Central HS (fictional),Riverton
+176,O,1,2,2,R,46,Trips Lt,Curl Flat,Pass,Incomplete,0,Orbit,Gun,Central HS (fictional),Riverton
+177,O,1,3,2,L,46,I-Form,Power,Run,Rush,1,,UC,Central HS (fictional),Riverton
+178,K,1,,,,45,,,Punt,Fair Catch,,,,Central HS (fictional),Riverton
+179,O,1,1,10,L,-24,Empty,Smash,Pass,Sack,-4,,Gun,Central HS (fictional),Riverton
+180,O,1,2,14,L,-20,Empty,Slant,Pass,Incomplete,0,,Gun,Central HS (fictional),Riverton
+181,O,1,3,14,L,-20,Pro Lt,PA Boot,Pass,Complete,15,,UC,Central HS (fictional),Riverton
+182,O,1,1,10,R,-35,Pro Lt,Outside Zone,Run,Rush,17,,UC,Central HS (fictional),Riverton
+183,O,1,1,10,R,48,Empty,Slant,Pass,Incomplete,0,,Gun,Central HS (fictional),Riverton
+184,O,1,2,10,R,48,Doubles,Counter,Run,Rush,4,,Gun,Central HS (fictional),Riverton
+185,O,1,3,6,M,44,Trips Rt,Smash,Pass,Complete,14,,Gun,Central HS (fictional),Riverton
+186,O,2,1,10,R,30,Pro Lt,Inside Zone,Run,Rush,6,,UC,Central HS (fictional),Riverton
+187,O,2,2,4,R,24,Trips Lt,Screen,Pass,Incomplete,0,,Gun,Central HS (fictional),Riverton
+188,O,2,3,4,M,24,Pro Rt,Outside Zone,Run,Rush,0,,UC,Central HS (fictional),Riverton
+189,K,2,,,,24,,,FG,Good,,,,Central HS (fictional),Riverton
+190,O,2,1,10,L,-26,Pro Rt,Curl Flat,Pass,Incomplete,0,,UC,Central HS (fictional),Riverton
+191,O,2,2,10,L,-26,Trips Lt,Reverse,Run,Rush,3,Jet Lt,Gun,Central HS (fictional),Riverton
+192,O,2,3,7,R,-29,Trips Rt,Smash,Pass,Complete,11,,Gun,Central HS (fictional),Riverton
+193,O,2,1,10,M,-40,Trips Lt,Slant,Pass,Complete,7,,Gun,Central HS (fictional),Riverton
+194,O,2,2,3,L,-47,I-Form,Curl Flat,Pass,Complete,10,,UC,Central HS (fictional),Riverton
+195,O,2,1,10,L,43,Pro Rt,Counter,Run,Rush,4,Across,UC,Central HS (fictional),Riverton
+196,O,2,2,6,L,39,I-Form,Toss,Run,Rush,5,,UC,Central HS (fictional),Riverton
+197,O,2,3,1,L,34,Trips Lt,Reverse,Run,Rush,3,Jet Rt,Gun,Central HS (fictional),Riverton
+198,O,2,1,10,L,31,Trips Rt,Slant,Pass,Incomplete,0,Orbit,Gun,Central HS (fictional),Riverton
+199,O,3,2,10,R,31,Trips Lt,Slant,Pass,Incomplete,0,Orbit,Gun,Central HS (fictional),Riverton
+200,O,3,3,10,L,31,I-Form,Smash,Pass,Complete,5,,UC,Central HS (fictional),Riverton
+201,K,3,,,,26,,,FG,Good,,,,Central HS (fictional),Riverton
+202,O,3,1,10,L,-26,Trips Lt,Screen,Pass,Complete,5,Jet Lt,Gun,Central HS (fictional),Riverton
+203,O,3,2,5,L,-31,Empty,Smash,Pass,Complete,8,,Gun,Central HS (fictional),Riverton
+204,O,3,1,10,L,-39,I-Form,Counter,Run,Rush,4,,UC,Central HS (fictional),Riverton
+205,O,3,2,6,M,-43,I-Form,Curl Flat,Pass,Incomplete,0,,UC,Central HS (fictional),Riverton
+206,O,3,3,6,M,-43,I-Form,Iso,Run,Rush,5,,UC,Central HS (fictional),Riverton
+207,K,3,,,,-48,,,Punt,Fair Catch,,,,Central HS (fictional),Riverton
+208,O,3,1,10,R,-39,Doubles,Inside Zone,Run,Rush,7,,Gun,Central HS (fictional),Riverton
+209,O,3,2,3,M,-46,Pro Lt,Inside Zone,Run,Rush,3,Orbit,UC,Central HS (fictional),Riverton
+210,O,3,1,10,M,-49,Pro Lt,Smash,Pass,Complete,19,Orbit,UC,Central HS (fictional),Riverton
+211,O,3,1,10,R,32,Empty,Slant,Pass,Complete,17,,Gun,Central HS (fictional),Riverton
+212,O,3,1,10,L,15,Pro Lt,Outside Zone,Run,Rush,9,,UC,Central HS (fictional),Riverton
+213,O,3,2,1,M,6,Pro Lt,Stick,Pass,Complete,5,,UC,Central HS (fictional),Riverton
+214,O,4,1,1,R,1,I-Form,Iso,Run,Rush TD,1,,UC,Central HS (fictional),Riverton
+215,K,4,,,,-35,,,KO,Touchback,,,,Central HS (fictional),Riverton
+216,O,4,1,10,M,-24,Trips Rt,PA Boot,Pass,Complete,5,,Gun,Central HS (fictional),Riverton
+217,O,4,2,5,L,-29,Trips Lt,Slant,Pass,Complete,11,,Gun,Central HS (fictional),Riverton
+218,O,4,1,10,L,-40,Pro Rt,Counter,Run,Rush,4,,UC,Central HS (fictional),Riverton
+219,O,4,2,6,M,-44,I-Form,Toss,Run,Rush,12,,UC,Central HS (fictional),Riverton
+220,O,4,1,10,L,44,Pro Lt,Draw,Run,Rush,4,,UC,Central HS (fictional),Riverton
+221,O,4,2,6,R,40,I-Form,Screen,Pass,Complete,11,,UC,Central HS (fictional),Riverton
+222,O,4,1,10,R,29,Doubles,Jet Sweep,Run,Rush,2,Jet Rt,Gun,Central HS (fictional),Riverton
+223,O,4,2,8,R,27,Trips Lt,Screen,Pass,Complete,5,,Gun,Central HS (fictional),Riverton
+224,O,4,3,3,R,22,Doubles,Jet Sweep,Run,Rush,9,Jet Lt,Gun,Central HS (fictional),Riverton
+225,O,4,1,10,M,13,Empty,Four Verts,Pass,Complete TD,13,,Gun,Central HS (fictional),Riverton
+226,K,4,,,,-35,,,KO,Touchback,,,,Central HS (fictional),Riverton
+227,O,4,1,10,L,-20,Trips Rt,Slant,Pass,Incomplete,0,,Gun,Central HS (fictional),Riverton
+228,K,1,,,,-35,,,KO,Touchback,,,,Central HS (fictional),St. Mary's
+229,O,1,1,10,L,-28,Doubles,Curl Flat,Pass,Complete,8,Orbit,Gun,Central HS (fictional),St. Mary's
+230,O,1,2,2,M,-36,Doubles,Draw,Run,Rush,8,,Gun,Central HS (fictional),St. Mary's
+231,O,1,1,10,L,-44,Trips Rt,PA Boot,Pass,Complete,7,,Gun,Central HS (fictional),St. Mary's
+232,O,1,2,3,R,49,Pro Lt,Draw,Run,Rush,1,,UC,Central HS (fictional),St. Mary's
+233,O,1,3,2,M,48,Trips Rt,Jet Sweep,Run,Rush,8,Jet Rt,Gun,Central HS (fictional),St. Mary's
+234,O,1,1,10,M,40,Pro Rt,Slant,Pass,Complete,7,,UC,Central HS (fictional),St. Mary's
+235,O,1,2,3,M,33,Pro Lt,Outside Zone,Run,Rush,8,,UC,Central HS (fictional),St. Mary's
+236,O,1,1,10,R,25,Doubles,Curl Flat,Pass,Complete,4,,Gun,Central HS (fictional),St. Mary's
+237,O,1,2,6,M,21,I-Form,Iso,Run,Rush,1,,UC,Central HS (fictional),St. Mary's
+238,O,1,3,5,M,20,Empty,Mesh,Pass,Complete,7,,Gun,Central HS (fictional),St. Mary's
+239,O,1,1,10,M,13,Pro Lt,Smash,Pass,Incomplete,0,,UC,Central HS (fictional),St. Mary's
+240,O,1,2,10,M,13,Doubles,Screen,Pass,Sack,-6,,Gun,Central HS (fictional),St. Mary's
+241,O,1,3,16,L,19,Trips Lt,Stick,Pass,Complete,6,,Gun,Central HS (fictional),St. Mary's
+242,K,2,,,,13,,,FG,Good,,,,Central HS (fictional),St. Mary's
+243,O,2,1,10,L,-29,Doubles,Reverse,Run,Rush,3,Jet Lt,Gun,Central HS (fictional),St. Mary's
+244,O,2,2,7,M,-32,Pro Lt,Smash,Pass,Sack,-9,,UC,Central HS (fictional),St. Mary's
+245,O,2,3,16,M,-23,Pro Rt,Reverse,Run,Rush,0,Jet Rt,UC,Central HS (fictional),St. Mary's
+246,K,2,,,,-23,,,Punt,Fair Catch,,,,Central HS (fictional),St. Mary's
+247,O,2,1,10,L,-26,Empty,Slant,Pass,Complete,16,,Gun,Central HS (fictional),St. Mary's
+248,O,2,1,10,M,-42,I-Form,Power,Run,Rush,1,,UC,Central HS (fictional),St. Mary's
+249,O,2,2,9,L,-43,Empty,Mesh,Pass,Sack,-7,,Gun,Central HS (fictional),St. Mary's
+250,O,2,3,16,R,-36,Trips Rt,Jet Sweep,Run,Rush,2,Jet Rt,Gun,Central HS (fictional),St. Mary's
+251,K,2,,,,-38,,,Punt,Fair Catch,,,,Central HS (fictional),St. Mary's
+252,O,2,1,10,M,-22,Trips Rt,Jet Sweep,Run,Rush,2,Jet Lt,Gun,Central HS (fictional),St. Mary's
+253,O,2,2,8,L,-24,Doubles,Jet Sweep,Run,Rush,3,Jet Lt,Gun,Central HS (fictional),St. Mary's
+254,O,2,3,5,R,-27,Pro Lt,Screen,Pass,Complete,17,,UC,Central HS (fictional),St. Mary's
+255,O,2,1,10,R,-44,Trips Rt,Draw,Run,Rush,6,,Gun,Central HS (fictional),St. Mary's
+256,O,2,2,4,M,50,Doubles,Slant,Pass,Incomplete,0,,Gun,Central HS (fictional),St. Mary's
+257,O,3,3,4,M,50,Trips Rt,Jet Sweep,Run,Rush,4,Jet Lt,Gun,Central HS (fictional),St. Mary's
+258,O,3,1,10,M,46,Doubles,Curl Flat,Pass,Complete,5,,Gun,Central HS (fictional),St. Mary's
+259,O,3,2,5,L,41,I-Form,Toss,Run,Rush,1,,UC,Central HS (fictional),St. Mary's
+260,O,3,3,4,R,40,Trips Rt,Reverse,Run,Rush,6,Jet Lt,Gun,Central HS (fictional),St. Mary's
+261,O,3,1,10,L,34,Trips Lt,Screen,Pass,Incomplete,0,,Gun,Central HS (fictional),St. Mary's
+262,O,3,2,10,L,34,Empty,Four Verts,Pass,Complete,14,,Gun,Central HS (fictional),St. Mary's
+263,O,3,1,10,M,20,I-Form,Smash,Pass,Incomplete,0,,UC,Central HS (fictional),St. Mary's
+264,O,3,2,10,M,20,Trips Rt,Smash,Pass,Incomplete,0,,Gun,Central HS (fictional),St. Mary's
+265,O,3,3,10,M,20,Doubles,PA Boot,Pass,Complete,3,Orbit,Gun,Central HS (fictional),St. Mary's
+266,K,3,,,,17,,,FG,Good,,,,Central HS (fictional),St. Mary's
+267,O,3,1,10,M,-25,Empty,Four Verts,Pass,Complete,29,,Gun,Central HS (fictional),St. Mary's
+268,O,3,1,10,R,46,Trips Lt,PA Boot,Pass,Complete,26,Orbit,Gun,Central HS (fictional),St. Mary's
+269,O,3,1,10,M,20,Trips Rt,Outside Zone,Run,Rush,4,Orbit,Gun,Central HS (fictional),St. Mary's
+270,O,3,2,6,L,16,I-Form,Iso,Run,Rush,2,,UC,Central HS (fictional),St. Mary's
+271,O,4,3,4,M,14,Empty,Counter,Run,Rush,6,,Gun,Central HS (fictional),St. Mary's
+272,O,4,1,8,L,8,Doubles,Slant,Pass,Complete TD,8,,Gun,Central HS (fictional),St. Mary's
+273,K,4,,,,-35,,,KO,Touchback,,,,Central HS (fictional),St. Mary's
+274,O,4,1,10,L,-37,Empty,Smash,Pass,Complete,3,,Gun,Central HS (fictional),St. Mary's
+275,O,4,2,7,M,-40,Pro Lt,Screen,Pass,Complete,11,,UC,Central HS (fictional),St. Mary's
+276,O,4,1,10,R,49,Trips Lt,Jet Sweep,Run,Rush,1,Jet Lt,Gun,Central HS (fictional),St. Mary's
+277,O,4,2,9,M,48,Trips Lt,Smash,Pass,Incomplete,0,Across,Gun,Central HS (fictional),St. Mary's
+278,O,4,3,9,L,48,Doubles,PA Boot,Pass,Complete,3,,Gun,Central HS (fictional),St. Mary's
+279,K,4,,,,45,,,Punt,Fair Catch,,,,Central HS (fictional),St. Mary's
+280,O,4,1,10,R,-40,Pro Rt,Smash,Pass,Complete,5,,UC,Central HS (fictional),St. Mary's
+281,O,4,2,5,L,-45,Trips Lt,Slant,Pass,Complete,25,,Gun,Central HS (fictional),St. Mary's
+282,O,4,1,10,M,30,Pro Lt,Screen,Pass,Complete,12,,UC,Central HS (fictional),St. Mary's
+283,O,4,1,10,R,18,Doubles,Stick,Pass,Sack,-5,,Gun,Central HS (fictional),St. Mary's
+284,O,4,2,15,R,23,Empty,Slant,Pass,Complete,4,,Gun,Central HS (fictional),St. Mary's
