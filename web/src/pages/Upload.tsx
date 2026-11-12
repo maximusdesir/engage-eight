@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useStore } from "../store";
+import { useStore } from "../useStore";
 import {
   api,
   ApiError,

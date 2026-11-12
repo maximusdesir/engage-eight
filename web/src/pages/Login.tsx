@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useStore } from "../store";
+import { useStore } from "../useStore";
 import { ApiError } from "../api/client";
 
 export default function Login() {

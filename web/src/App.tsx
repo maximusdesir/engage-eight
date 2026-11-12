@@ -1,5 +1,5 @@
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
-import { useStore } from "./store";
+import { useStore } from "./useStore";
 import Login from "./pages/Login";
 import Teams from "./pages/Teams";
 import Upload from "./pages/Upload";
