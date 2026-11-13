@@ -13,13 +13,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .db.session import init_db
+from .db.session import SessionLocal, init_db
 from .routers import auth, plays, predict, teams, tendencies, uploads, vocab
+from .services.demo import purge_demo_users
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()          # alembic upgrade head
+    with SessionLocal() as db:
+        purge_demo_users(db)   # demo accounts older than 24 h
     yield
 
 

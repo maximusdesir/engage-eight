@@ -30,6 +30,7 @@ class UserOut(BaseModel):
     id: int
     email: EmailStr
     role: str
+    is_demo: bool = False
 
 
 class Token(BaseModel):
@@ -37,3 +38,11 @@ class Token(BaseModel):
 
     access_token: str
     token_type: str = "bearer"
+
+
+class DemoSession(Token):
+    """A fresh demo account: the token plus where its sample data lives."""
+
+    team_id: int
+    opponent_id: int
+    opponent_name: str
