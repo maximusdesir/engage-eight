@@ -219,7 +219,67 @@ check("blend pulls the prediction toward the opponent's tendency",
       f"model {body.get('model_pass_prob')} -> blended {body.get('pass_prob')}, "
       f"{[s['label'] for s in body.get('blend', [])]}")
 
-# 10. rate limiting on login (last: it uses up this client's login budget)
+# 10. demo accounts: one click, own data, no password, purged after 24 h
+from datetime import datetime, timedelta  # noqa: E402
+
+from sqlalchemy import func, select  # noqa: E402
+
+from app.db.models import Play, Team, User  # noqa: E402
+from app.db.session import SessionLocal  # noqa: E402
+from app.services.demo import purge_demo_users  # noqa: E402
+
+r1, r2 = c.post("/auth/demo"), c.post("/auth/demo")
+check("POST /auth/demo (twice, no credentials)",
+      r1.status_code == 201 and r2.status_code == 201, (r1.status_code, r2.status_code))
+d1, d2 = r1.json(), r2.json()
+h1 = {"Authorization": f"Bearer {d1['access_token']}"}
+h2 = {"Authorization": f"Bearer {d2['access_token']}"}
+check("each demo gets its own team and opponent",
+      d1["team_id"] != d2["team_id"] and d1["opponent_id"] != d2["opponent_id"])
+me = c.get("/auth/me", headers=h1).json()
+check("demo user is flagged is_demo; normal users are not",
+      me["is_demo"] is True and c.get("/auth/me", headers=auth).json()["is_demo"] is False, me)
+r = c.post("/auth/login", data={"username": me["email"], "password": PW})
+check("demo account has no usable password", r.status_code == 401, r.status_code)
+r = c.get(f"/teams/{d1['team_id']}/tendencies", params={"opponent_id": d1["opponent_id"],
+                                                         "split": "formation"}, headers=h1)
+rows = r.json()["rows"] if r.status_code == 200 else []
+buckets = {x["bucket"]: x for x in rows}
+check("demo opponent film is loaded: I-Form runs, Empty passes",
+      r.status_code == 200 and "I-FORM" in buckets and "EMPTY" in buckets
+      and buckets["I-FORM"]["run_pct"] > 50 > buckets["EMPTY"]["run_pct"], list(buckets))
+r = c.get(f"/teams/{d1['team_id']}/uploads", headers=h1)
+check("demo film is a normal upload", r.status_code == 200 and len(r.json()) == 1
+      and r.json()[0]["n_plays"] > 200, r.text[:200])
+# Cross-account isolation: another demo and a regular coach see 404.
+for who, hdr in (("another demo", h2), ("a regular coach", auth)):
+    for path in ("", "/tendencies", "/uploads", "/plays"):
+        r = c.get(f"/teams/{d1['team_id']}{path}", headers=hdr)
+        check(f"{who} on demo team{path or ' '} -> 404", r.status_code == 404, r.status_code)
+r = c.get(f"/teams/{team_id}", headers=h1)
+check("demo user on a regular team -> 404", r.status_code == 404, r.status_code)
+
+with SessionLocal() as db:
+    check("purge keeps fresh demo users", purge_demo_users(db) == 0)
+    d1_user_id = db.scalar(select(User.id).where(User.email == me["email"]))
+    purged = purge_demo_users(db, now=datetime.utcnow() + timedelta(hours=25))
+    left = db.scalar(select(func.count()).select_from(Play).where(
+        Play.team_id.in_([d1["team_id"], d2["team_id"]])))
+    check("purge deletes old demo users and their data",
+          purged >= 2 and left == 0
+          and db.get(User, d1_user_id) is None and db.get(Team, d1["team_id"]) is None,
+          f"purged {purged}, plays left {left}")
+    check("purge never touches regular users",
+          db.scalar(select(User.id).where(User.email == "coach@engage8.app")) is not None)
+r = c.get("/auth/me", headers=h1)
+check("a purged demo token stops working", r.status_code == 401, r.status_code)
+r = c.get("/auth/me", headers=auth)
+check("regular coach still signed in after purge", r.status_code == 200, r.status_code)
+
+codes = [c.post("/auth/demo").status_code for _ in range(10)]
+check("demo creation is rate limited", 429 in codes, codes)
+
+# 11. rate limiting on login (last: it uses up this client's login budget)
 codes = [c.post("/auth/login", data={"username": "coach@engage8.app", "password": "wrong"}
                 ).status_code for _ in range(12)]
 check("login is rate limited", 429 in codes, codes)

@@ -10,7 +10,8 @@ from app.core.ratelimit import rate_limit
 from app.core.security import create_access_token, hash_password, verify_password
 from app.db.models import User
 from app.deps import get_current_user, get_db
-from app.schemas.auth import Token, UserCreate, UserOut
+from app.schemas.auth import DemoSession, Token, UserCreate, UserOut
+from app.services import demo as demo_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -56,6 +57,27 @@ def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return Token(access_token=create_access_token(str(user.id)))
+
+
+@router.post(
+    "/demo",
+    response_model=DemoSession,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(rate_limit("demo", 10, 3600))],
+)
+def start_demo(db: Session = Depends(get_db)) -> DemoSession:
+    """Create a throwaway account with a team and the fictional Central HS film.
+
+    No credentials needed. The account is purged after 24 hours.
+    """
+    demo_service.purge_demo_users(db)  # a long-lived process never hits the startup purge
+    user, team, opponent = demo_service.create_demo_session(db)
+    return DemoSession(
+        access_token=create_access_token(str(user.id)),
+        team_id=team.id,
+        opponent_id=opponent.id,
+        opponent_name=opponent.name,
+    )
 
 
 @router.get("/me", response_model=UserOut)

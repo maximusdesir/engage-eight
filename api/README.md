@@ -59,6 +59,7 @@ All `/teams/{team_id}/...` routes require auth and ownership of that team.
 | GET | `/health` | no | Liveness check |
 | POST | `/auth/signup` | no | Create a user |
 | POST | `/auth/login` | no | Get a JWT |
+| POST | `/auth/demo` | no | Throwaway demo account with the fictional Central HS film loaded (rate limited, purged after 24 h) |
 | GET | `/auth/me` | yes | Current user |
 | GET/POST | `/teams` | yes | List/create your teams |
 | GET | `/teams/{id}` | yes | One team |

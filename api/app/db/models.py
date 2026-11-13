@@ -10,7 +10,7 @@ from datetime import datetime
 
 from sqlalchemy import (
     Boolean, DateTime, Float, ForeignKey, Integer, String, Text,
-    UniqueConstraint, func,
+    UniqueConstraint, false, func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -24,6 +24,8 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255))
     role: Mapped[str] = mapped_column(String(20), default="coach")  # admin|coach|analyst|player
+    # Throwaway account from POST /auth/demo; purged after 24 h (services/demo.py).
+    is_demo: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     teams: Mapped[list["Team"]] = relationship(back_populates="owner")
