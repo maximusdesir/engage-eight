@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pydantic import model_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 API_ROOT = Path(__file__).resolve().parent.parent      # api/
@@ -53,6 +53,20 @@ class Settings(BaseSettings):
         "http://localhost:5173", "http://127.0.0.1:5173",
         "http://localhost:3000", "http://127.0.0.1:3000",
     ]
+
+    @field_validator("database_url")
+    @classmethod
+    def _use_psycopg3(cls, url: str) -> str:
+        """Point plain Postgres URLs at the installed psycopg 3 driver.
+
+        Hosts like Neon and Render hand out ``postgresql://`` (or
+        ``postgres://``) URLs, which SQLAlchemy maps to psycopg2, which isn't
+        installed. Rewrite the scheme so those URLs can be pasted as-is.
+        """
+        for prefix in ("postgresql://", "postgres://"):
+            if url.startswith(prefix):
+                return "postgresql+psycopg://" + url[len(prefix):]
+        return url
 
     @model_validator(mode="after")
     def _require_strong_secret_in_prod(self):

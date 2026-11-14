@@ -284,4 +284,15 @@ codes = [c.post("/auth/login", data={"username": "coach@engage8.app", "password"
                 ).status_code for _ in range(12)]
 check("login is rate limited", 429 in codes, codes)
 
+# 12. hosting config: Neon/Render-style Postgres URLs use the psycopg 3 driver
+from app.config import Settings  # noqa: E402
+
+for raw in ("postgresql://u:p@db.neon.tech/e8?sslmode=require",
+            "postgres://u:p@db.neon.tech/e8?sslmode=require"):
+    url = Settings(debug=True, database_url=raw).database_url
+    check(f"{raw.split(':')[0]}:// URL uses psycopg 3",
+          url == "postgresql+psycopg://u:p@db.neon.tech/e8?sslmode=require", url)
+url = Settings(debug=True, database_url="sqlite:///x.db").database_url
+check("SQLite URL left alone", url == "sqlite:///x.db", url)
+
 print(f"\n{ok} checks passed.")

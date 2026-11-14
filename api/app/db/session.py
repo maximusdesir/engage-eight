@@ -12,7 +12,14 @@ _is_sqlite = settings.database_url.startswith("sqlite")
 # check_same_thread is a SQLite-only flag.
 connect_args = {"check_same_thread": False} if _is_sqlite else {}
 
-engine = create_engine(settings.database_url, connect_args=connect_args, future=True)
+# pool_pre_ping: hosted Postgres (Neon) drops idle connections, so check each
+# pooled connection before use instead of failing the first request after a lull.
+engine = create_engine(
+    settings.database_url,
+    connect_args=connect_args,
+    pool_pre_ping=not _is_sqlite,
+    future=True,
+)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
 
 if _is_sqlite:
