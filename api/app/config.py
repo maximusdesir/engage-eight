@@ -41,8 +41,15 @@ class Settings(BaseSettings):
     # Rate limiting (in-process, per client IP). Fine for a single API
     # instance; put a shared limiter (e.g. at the proxy) in front of several.
     rate_limit_enabled: bool = True
-    # Only trust X-Forwarded-For when the API sits behind your own proxy.
-    trust_proxy_headers: bool = False
+    # Header holding the visitor's IP, set by a proxy the client can't get
+    # around (on Render: "cf-connecting-ip", set by Cloudflare). Empty means
+    # use the connecting address. Never X-Forwarded-For: proxies append to it,
+    # so its first entry is whatever the client sent.
+    client_ip_header: str = ""
+
+    # Most demo accounts alive at once (each is purged after 24 h). Caps
+    # database growth even if someone gets around the per-IP limit.
+    demo_max_accounts: int = 300
 
     min_password_length: int = 10
 
@@ -67,6 +74,18 @@ class Settings(BaseSettings):
             if url.startswith(prefix):
                 return "postgresql+psycopg://" + url[len(prefix):]
         return url
+
+    @field_validator("client_ip_header")
+    @classmethod
+    def _not_x_forwarded_for(cls, header: str) -> str:
+        header = header.strip().lower()
+        if header == "x-forwarded-for":
+            raise ValueError(
+                "ENGAGE8_CLIENT_IP_HEADER can't be X-Forwarded-For: clients can "
+                "forge its first entry. Use a header your proxy overwrites, "
+                "such as cf-connecting-ip."
+            )
+        return header
 
     @model_validator(mode="after")
     def _require_strong_secret_in_prod(self):

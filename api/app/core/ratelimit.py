@@ -7,6 +7,7 @@ keeps its own counts, so put a shared limiter (proxy or Redis) in front.
 """
 from __future__ import annotations
 
+import logging
 import threading
 import time
 from collections import deque
@@ -15,16 +16,27 @@ from fastapi import HTTPException, Request, status
 
 from app.config import settings
 
+log = logging.getLogger(__name__)
+_warned_missing_header = False
 _lock = threading.Lock()
 _hits: dict[tuple[str, str], deque[float]] = {}
 _last_sweep = 0.0
 
 
 def client_ip(request: Request) -> str:
-    if settings.trust_proxy_headers:
-        fwd = request.headers.get("x-forwarded-for")
-        if fwd:
-            return fwd.split(",")[0].strip()
+    """The visitor's IP: from ENGAGE8_CLIENT_IP_HEADER if set, else the peer."""
+    global _warned_missing_header
+    if settings.client_ip_header:
+        ip = request.headers.get(settings.client_ip_header, "").strip()
+        if ip:
+            return ip
+        if not _warned_missing_header:
+            _warned_missing_header = True
+            log.warning(
+                "client IP header %r is missing; falling back to the connecting "
+                "address, so visitors behind the same proxy share one rate limit",
+                settings.client_ip_header,
+            )
     return request.client.host if request.client else "unknown"
 
 
@@ -38,7 +50,12 @@ def _sweep(now: float, max_window: float = 3600.0) -> None:
         del _hits[key]
 
 
-def rate_limit(name: str, limit: int, window_seconds: int):
+def rate_limit(
+    name: str,
+    limit: int,
+    window_seconds: int,
+    detail: str = "Too many requests. Try again shortly.",
+):
     """FastAPI dependency allowing ``limit`` calls per ``window_seconds``."""
 
     def dependency(request: Request) -> None:
@@ -55,7 +72,7 @@ def rate_limit(name: str, limit: int, window_seconds: int):
                 retry = int(window_seconds - (now - q[0])) + 1
                 raise HTTPException(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    detail="Too many requests. Try again shortly.",
+                    detail=detail,
                     headers={"Retry-After": str(retry)},
                 )
             q.append(now)

@@ -13,6 +13,10 @@ services:
       # The image listens on 8000; tell Render so it routes there.
       - key: PORT
         value: "8000"
+      # Rate limits key on the visitor's IP. Render sits behind Cloudflare,
+      # which sets this header itself; X-Forwarded-For can be forged.
+      - key: ENGAGE8_CLIENT_IP_HEADER
+        value: cf-connecting-ip
       # Random 256-bit signing key, generated once by Render.
       - key: ENGAGE8_JWT_SECRET
         generateValue: true

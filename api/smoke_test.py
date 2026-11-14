@@ -295,4 +295,58 @@ for raw in ("postgresql://u:p@db.neon.tech/e8?sslmode=require",
 url = Settings(debug=True, database_url="sqlite:///x.db").database_url
 check("SQLite URL left alone", url == "sqlite:///x.db", url)
 
+# 13. rate-limit client IP: a forged X-Forwarded-For never dodges a limit
+from app.config import settings  # noqa: E402
+
+
+def bad_logins(headers_for):
+    ratelimit.reset()
+    return [c.post("/auth/login", data={"username": "coach@engage8.app", "password": "wrong"},
+                   headers=headers_for(i)).status_code for i in range(12)]
+
+
+codes = bad_logins(lambda i: {"X-Forwarded-For": f"203.0.113.{i}"})
+check("rotating X-Forwarded-For doesn't reset the limit", 429 in codes, codes)
+
+settings.client_ip_header = "cf-connecting-ip"
+try:
+    codes = bad_logins(lambda i: {"CF-Connecting-IP": "198.51.100.1",
+                                  "X-Forwarded-For": f"203.0.113.{i}"})
+    check("same CF-Connecting-IP is limited despite rotating X-Forwarded-For",
+          429 in codes, codes)
+    r = c.post("/auth/login", data={"username": "coach@engage8.app", "password": "wrong"},
+               headers={"CF-Connecting-IP": "198.51.100.2"})
+    check("another visitor (CF-Connecting-IP) has their own limit",
+          r.status_code == 401, r.status_code)
+finally:
+    settings.client_ip_header = ""
+
+try:
+    Settings(debug=True, client_ip_header="X-Forwarded-For")
+    refused = False
+except ValueError:
+    refused = True
+check("ENGAGE8_CLIENT_IP_HEADER=X-Forwarded-For is refused", refused)
+
+# 14. demo cap: a full demo says so, separately from the per-IP limit
+from app.services.demo import count_demo_users  # noqa: E402
+
+ratelimit.reset()
+with SessionLocal() as db:
+    live = count_demo_users(db)
+cap = settings.demo_max_accounts
+settings.demo_max_accounts = live
+try:
+    r = c.post("/auth/demo")
+    check("demo at its cap -> 429 'full'",
+          r.status_code == 429 and "full" in r.json()["detail"], r.text[:120])
+finally:
+    settings.demo_max_accounts = cap
+r = c.post("/auth/demo")
+check("demo under the cap -> 201", r.status_code == 201, r.status_code)
+codes = [c.post("/auth/demo") for _ in range(10)]
+r = codes[-1]
+check("per-network demo limit says so",
+      r.status_code == 429 and "network" in r.json()["detail"], r.text[:120])
+
 print(f"\n{ok} checks passed.")
