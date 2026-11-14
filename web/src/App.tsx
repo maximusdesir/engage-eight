@@ -1,5 +1,5 @@
 import { startTransition, useState } from "react";
-import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "./useStore";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
@@ -10,17 +10,27 @@ import Predict from "./pages/Predict";
 import Vocabulary from "./pages/Vocabulary";
 import Quiz from "./pages/Quiz";
 import ServerWaking from "./components/ServerWaking";
+import "./site.css";
+import "./app.css";
+
+const APP_LINKS = [
+  ["/tendencies", "Tendencies"],
+  ["/predict", "Predict"],
+  ["/upload", "Upload"],
+  ["/vocabulary", "Vocabulary"],
+  ["/teams", "Teams"],
+] as const;
 
 function TeamPicker() {
   const { teams, activeTeam, setActiveTeam } = useStore();
   if (teams.length === 0) return null;
   return (
     <select
+      aria-label="Active team"
       value={activeTeam?.id ?? ""}
       onChange={(e) =>
         setActiveTeam(teams.find((t) => t.id === Number(e.target.value)) ?? null)
       }
-      style={{ width: "100%", marginBottom: 12 }}
     >
       {teams.map((t) => (
         <option key={t.id} value={t.id}>
@@ -45,7 +55,7 @@ function DemoBanner({ userId }: { userId: number }) {
         This account and its data are deleted after 24 hours.
       </span>
       <button
-        className="secondary"
+        className="btn btn-sm btn-line"
         aria-label="Dismiss demo notice"
         onClick={() => {
           localStorage.setItem(BANNER_KEY, String(userId));
@@ -62,60 +72,65 @@ function Shell() {
   const { user, logout } = useStore();
   const navigate = useNavigate();
   return (
-    <div className="app">
-      <nav className="sidebar">
-        <div className="brand">
-          Engage Eight
-          <small>pre-snap scouting</small>
-        </div>
-        <TeamPicker />
-        <NavLink className="nav-link" to="/tendencies">
-          Tendencies
-        </NavLink>
-        <NavLink className="nav-link" to="/predict">
-          Predict / Recommend
-        </NavLink>
-        <NavLink className="nav-link" to="/upload">
-          Upload
-        </NavLink>
-        <NavLink className="nav-link" to="/vocabulary">
-          Vocabulary
-        </NavLink>
-        <NavLink className="nav-link" to="/teams">
-          Teams
-        </NavLink>
-        <div className="sidebar-footer">
-          <div>{user?.is_demo ? "Demo account" : user?.email}</div>
-          <button
-            className="secondary"
-            style={{ marginTop: 8 }}
-            onClick={() => {
-              // Router navigations run as transitions; logging out in the same
-              // transition stops the login gate from rendering in between.
-              navigate("/");
-              startTransition(logout);
-            }}
-          >
-            {user?.is_demo ? "End demo" : "Sign out"}
-          </button>
-        </div>
-      </nav>
-      <main className="content">
-        {user?.is_demo && <DemoBanner userId={user.id} />}
-        <Routes>
-          <Route path="/tendencies" element={<Tendencies />} />
-          <Route path="/predict" element={<Predict />} />
-          <Route path="/upload" element={<Upload />} />
-          <Route path="/vocabulary" element={<Vocabulary />} />
-          <Route path="/teams" element={<Teams />} />
-          <Route path="*" element={<Navigate to="/tendencies" replace />} />
-        </Routes>
-      </main>
+    <div className="e8">
+      <div className="e8-page">
+        <header className="nav app-nav">
+          <Link className="app-brand" to="/">
+            <i aria-hidden="true" />
+            Engage Eight
+          </Link>
+          <nav className="app-links" aria-label="App">
+            {APP_LINKS.map(([to, label]) => (
+              <NavLink key={to} className="nav-link" to={to}>
+                {label}
+              </NavLink>
+            ))}
+          </nav>
+          <div className="app-account">
+            <TeamPicker />
+            <span className="app-who">{user?.is_demo ? "Demo account" : user?.email}</span>
+            <button
+              className="btn btn-sm btn-line"
+              onClick={() => {
+                // Router navigations run as transitions; logging out in the same
+                // transition stops the login gate from rendering in between.
+                navigate("/");
+                startTransition(logout);
+              }}
+            >
+              {user?.is_demo ? "End demo" : "Sign out"}
+            </button>
+          </div>
+        </header>
+        <main className="app-main">
+          {user?.is_demo && <DemoBanner userId={user.id} />}
+          <Routes>
+            <Route path="/tendencies" element={<Tendencies />} />
+            <Route path="/predict" element={<Predict />} />
+            <Route path="/upload" element={<Upload />} />
+            <Route path="/vocabulary" element={<Vocabulary />} />
+            <Route path="/teams" element={<Teams />} />
+            <Route path="*" element={<Navigate to="/tendencies" replace />} />
+          </Routes>
+        </main>
+        <p className="app-foot">
+          Run/pass model trained on NFL play-by-play from nflverse. Your film
+          is private to your account.
+        </p>
+      </div>
     </div>
   );
 }
 
-const Loading = () => <div style={{ padding: 40 }}>Loading…</div>;
+const Loading = () => (
+  <div className="e8">
+    <div className="e8-page">
+      <p className="app-loading" role="status">
+        Loading…
+      </p>
+    </div>
+  </div>
+);
 
 /** /login: signed-in users go back to where they were headed. */
 function LoginRoute() {

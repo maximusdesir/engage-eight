@@ -122,6 +122,13 @@ export type DemoSession = {
   opponent_name: string;
 };
 export type Team = { id: number; name: string; level: string; season: number | null };
+export type Opponent = {
+  id: number;
+  team_id: number;
+  name: string;
+  oc_name: string | null;
+  notes: string | null;
+};
 
 export type TendencyRow = {
   bucket: string;
@@ -264,7 +271,8 @@ export const api = {
     request<Team>("/teams", { body: { name, level, season } }),
 
   // Everything below is scoped to one of the signed-in user's teams.
-  upload: (teamId: number, file: File, source: string, team: string | null) => {
+  listOpponents: (teamId: number) => request<Opponent[]>(`/teams/${teamId}/opponents`),
+  upload:(teamId: number, file: File, source: string, team: string | null) => {
     const fd = new FormData();
     fd.append("file", file);
     fd.append("source", source);

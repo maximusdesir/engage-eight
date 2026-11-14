@@ -7,6 +7,7 @@ import {
   type VocabResponse,
 } from "../api/client";
 import CanonicalPicker from "../components/CanonicalPicker";
+import PageHead, { NeedsTeam } from "../components/PageHead";
 
 export default function Vocabulary() {
   const { activeTeam } = useStore();
@@ -23,7 +24,7 @@ export default function Vocabulary() {
     try {
       setVocab(await api.getVocab(activeTeam.id, teamFilter || null));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to load vocab");
+      setError(err instanceof ApiError ? err.message : "Couldn't load the vocabulary.");
     }
   };
 
@@ -32,14 +33,7 @@ export default function Vocabulary() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTeam?.id]);
 
-  if (!activeTeam) {
-    return (
-      <div>
-        <h1>Vocabulary</h1>
-        <p className="subtitle">Select a team first (Teams screen).</p>
-      </div>
-    );
-  }
+  if (!activeTeam) return <NeedsTeam title="Vocabulary" />;
 
   const key = (kind: string, raw: string) => `${kind}::${raw}`;
 
@@ -55,7 +49,7 @@ export default function Vocabulary() {
       if (c) mappings.push({ kind: "motion", raw_value: raw, canonical_value: c });
     }
     if (mappings.length === 0) {
-      setError("Choose a canonical value for at least one row.");
+      setError("Pick a standard name for at least one row.");
       return;
     }
     setError(null);
@@ -64,10 +58,10 @@ export default function Vocabulary() {
     try {
       await api.setVocab(activeTeam.id, mappings);
       setChoices({});
-      setMsg(`Saved ${mappings.length} mapping(s).`);
+      setMsg(`Saved ${mappings.length} mapping${mappings.length === 1 ? "" : "s"}.`);
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Save failed");
+      setError(err instanceof ApiError ? err.message : "Save failed.");
     } finally {
       setBusy(false);
     }
@@ -82,101 +76,114 @@ export default function Vocabulary() {
 
   return (
     <div>
-      <h1>Vocabulary</h1>
-      <p className="subtitle">
-        Map this team's formation/motion names onto the canonical vocabulary so
-        naming variants combine. Changes apply on read — no re-import needed.
-      </p>
+      <PageHead title="Vocabulary">
+        Map this team's formation and motion names onto standard ones, so
+        "Trips Rt" and "TRIPS" count as the same thing. Changes apply right
+        away, with no re-upload.
+      </PageHead>
 
-      <div className="card">
-        <div className="row">
-          <div className="field">
-            <label>Offense team filter (optional)</label>
+      <section className="card">
+        <form
+          className="row"
+          onSubmit={(e) => {
+            e.preventDefault();
+            load();
+          }}
+        >
+          <label className="field">
+            <span>Offense (optional)</span>
             <input
               value={teamFilter}
               onChange={(e) => setTeamFilter(e.target.value)}
               placeholder="e.g. LINCOLN"
             />
-          </div>
-          <button className="secondary" onClick={load}>
-            Refresh
-          </button>
-        </div>
-      </div>
+          </label>
+          <button className="btn btn-md btn-line">Refresh</button>
+        </form>
+      </section>
 
-      <div className="card">
-        <h1 style={{ fontSize: 16 }}>Unmapped values</h1>
-        {error && <div className="error">{error}</div>}
-        {msg && <div className="ok">{msg}</div>}
+      <section className="card">
+        <h2 className="card-title cond">Needs mapping</h2>
+        {error && <div className="msg error" role="alert">{error}</div>}
+        {msg && <div className="msg ok" role="status">{msg}</div>}
         {unmappedRows.length === 0 ? (
-          <div className="muted">
-            Nothing to map — every formation/motion is recognized.
-          </div>
+          <p className="muted" style={{ marginTop: error || msg ? 14 : 0 }}>
+            Nothing to map. Every formation and motion name is recognized.
+          </p>
         ) : (
           <>
-            <table>
-              <thead>
-                <tr>
-                  <th>Kind</th>
-                  <th>Raw value</th>
-                  <th>Canonical</th>
-                </tr>
-              </thead>
-              <tbody>
-                {unmappedRows.map(({ kind, raw }) => (
-                  <tr key={key(kind, raw)}>
-                    <td>
-                      <span className="pill">{kind}</span>
-                    </td>
-                    <td>{raw}</td>
-                    <td>
-                      <CanonicalPicker
-                        options={
-                          kind === "formation"
-                            ? vocab!.canonical.formations
-                            : vocab!.canonical.motions
-                        }
-                        value={choices[key(kind, raw)] ?? ""}
-                        onChange={(v) =>
-                          setChoices((c) => ({ ...c, [key(kind, raw)]: v }))
-                        }
-                      />
-                    </td>
+            <div className="table-wrap" style={{ marginTop: error || msg ? 14 : 0 }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Kind</th>
+                    <th>Name in your film</th>
+                    <th>Standard name</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            <button style={{ marginTop: 14 }} onClick={save} disabled={busy}>
+                </thead>
+                <tbody>
+                  {unmappedRows.map(({ kind, raw }) => (
+                    <tr key={key(kind, raw)}>
+                      <td>
+                        <span className="pill">{kind}</span>
+                      </td>
+                      <td className="strong">{raw}</td>
+                      <td>
+                        <CanonicalPicker
+                          label={`Standard name for ${raw}`}
+                          options={
+                            kind === "formation"
+                              ? vocab!.canonical.formations
+                              : vocab!.canonical.motions
+                          }
+                          value={choices[key(kind, raw)] ?? ""}
+                          onChange={(v) => setChoices((c) => ({ ...c, [key(kind, raw)]: v }))}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <button
+              className="btn btn-md btn-light"
+              style={{ marginTop: 18 }}
+              onClick={save}
+              disabled={busy}
+              aria-busy={busy}
+            >
               {busy ? "Saving…" : "Save mappings"}
             </button>
           </>
         )}
-      </div>
+      </section>
 
       {vocab && vocab.mappings.length > 0 && (
-        <div className="card">
-          <h1 style={{ fontSize: 16 }}>Existing mappings</h1>
-          <table>
-            <thead>
-              <tr>
-                <th>Kind</th>
-                <th>Raw value</th>
-                <th>Canonical</th>
-              </tr>
-            </thead>
-            <tbody>
-              {vocab.mappings.map((m) => (
-                <tr key={m.id}>
-                  <td>
-                    <span className="pill">{m.kind}</span>
-                  </td>
-                  <td>{m.raw_value}</td>
-                  <td>{m.canonical_value}</td>
+        <section className="card">
+          <h2 className="card-title cond">Saved mappings</h2>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Kind</th>
+                  <th>Name in your film</th>
+                  <th>Standard name</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {vocab.mappings.map((m) => (
+                  <tr key={m.id}>
+                    <td>
+                      <span className="pill">{m.kind}</span>
+                    </td>
+                    <td className="strong">{m.raw_value}</td>
+                    <td>{m.canonical_value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
       )}
     </div>
   );

@@ -7,6 +7,7 @@ import {
   type Split,
   type TendencyRow,
 } from "../api/client";
+import PageHead, { NeedsTeam } from "../components/PageHead";
 
 const SPLIT_LABELS: Record<Split, string> = {
   down_distance: "Down & distance",
@@ -18,15 +19,27 @@ const SPLIT_LABELS: Record<Split, string> = {
 };
 
 function RunPassBar({ run, pass }: { run: number; pass: number }) {
+  // flex-grow by share, so the gap never pushes the bar past its column, and
+  // an empty side draws nothing (no sliver of red on a 100% run row).
   return (
-    <div className="bar" title={`Run ${run}% / Pass ${pass}%`}>
-      <div className="run" style={{ width: `${run}%` }}>
-        <span>{run > 12 ? `${run}%` : ""}</span>
+    <>
+      <div className="rp" role="img" aria-label={`Run ${run}%, pass ${pass}%`}>
+        {run > 0 && (
+          <span className="rp-run" style={{ flexGrow: run }}>
+            {run >= 15 ? `${Math.round(run)}%` : ""}
+          </span>
+        )}
+        {pass > 0 && (
+          <span className="rp-pass" style={{ flexGrow: pass }}>
+            {pass >= 15 ? `${Math.round(pass)}%` : ""}
+          </span>
+        )}
       </div>
-      <div className="pass" style={{ width: `${pass}%` }}>
-        <span>{pass > 12 ? `${pass}%` : ""}</span>
-      </div>
-    </div>
+      {/* Phones: the bar is too narrow for numbers inside it. */}
+      <small className="rp-note" aria-hidden="true">
+        {Math.round(pass)}% pass
+      </small>
+    </>
   );
 }
 
@@ -46,7 +59,7 @@ export default function Tendencies() {
       const res = await api.tendencies(activeTeam.id, split, teamFilter || null);
       setRows(res.rows);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to load");
+      setError(err instanceof ApiError ? err.message : "Couldn't load tendencies.");
       setRows([]);
     } finally {
       setLoading(false);
@@ -58,90 +71,85 @@ export default function Tendencies() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [split, activeTeam?.id]);
 
-  if (!activeTeam) {
-    return (
-      <div>
-        <h1>Tendencies</h1>
-        <p className="subtitle">Create or select a team first (Teams screen).</p>
-      </div>
-    );
-  }
+  if (!activeTeam) return <NeedsTeam title="Tendencies" />;
 
   return (
     <div>
-      <h1>Tendencies</h1>
-      <p className="subtitle">
-        What they like to do, by situation, from the plays uploaded to{" "}
-        {activeTeam.name}. Formation and motion buckets use this team's
-        vocabulary mapping.
-      </p>
+      <PageHead title="Tendencies">
+        What they like to do in each situation, from the film uploaded to{" "}
+        {activeTeam.name}. Formation and motion use this team's vocabulary
+        mapping.
+      </PageHead>
 
-      <div className="card">
-        <div className="row">
-          <div className="field">
-            <label>Split by</label>
-            <select
-              value={split}
-              onChange={(e) => setSplit(e.target.value as Split)}
-            >
+      <section className="card">
+        <form
+          className="row"
+          onSubmit={(e) => {
+            e.preventDefault();
+            load();
+          }}
+        >
+          <label className="field">
+            <span>Split by</span>
+            <select value={split} onChange={(e) => setSplit(e.target.value as Split)}>
               {SPLITS.map((s) => (
                 <option key={s} value={s}>
                   {SPLIT_LABELS[s]}
                 </option>
               ))}
             </select>
-          </div>
-          <div className="field">
-            <label>Offense team filter (optional)</label>
+          </label>
+          <label className="field">
+            <span>Offense (optional)</span>
             <input
               value={teamFilter}
               onChange={(e) => setTeamFilter(e.target.value)}
               placeholder="e.g. LINCOLN"
             />
-          </div>
-          <button className="secondary" onClick={load}>
-            Apply
-          </button>
-        </div>
-      </div>
+          </label>
+          <button className="btn btn-md btn-line">Apply</button>
+        </form>
+      </section>
 
-      <div className="card">
-        {error && <div className="error">{error}</div>}
+      <section className="card" aria-busy={loading}>
+        {error && <div className="msg error" role="alert">{error}</div>}
         {loading ? (
-          <div className="muted">Loading…</div>
+          <p className="muted">Loading…</p>
         ) : rows.length === 0 ? (
-          <div className="muted">
-            No plays yet. Upload a breakdown to populate tendencies.
-          </div>
+          !error && <p className="muted">No plays yet. Upload a breakdown to see tendencies.</p>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>{SPLIT_LABELS[split]}</th>
-                <th>Plays</th>
-                <th>Run / Pass</th>
-                <th>Explosive</th>
-                <th>Avg EPA</th>
-                <th>Top play</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.bucket}>
-                  <td>{r.bucket}</td>
-                  <td>{r.plays}</td>
-                  <td>
-                    <RunPassBar run={r.run_pct} pass={r.pass_pct} />
-                  </td>
-                  <td>{r.explosive_pct == null ? "—" : `${r.explosive_pct}%`}</td>
-                  <td>{r.avg_epa ?? "—"}</td>
-                  <td>{r.top_play}</td>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>{SPLIT_LABELS[split]}</th>
+                  <th className="num">Plays</th>
+                  <th>Run / pass</th>
+                  <th className="num hide-sm">Explosive</th>
+                  <th className="num hide-sm">Avg EPA</th>
+                  <th className="hide-sm">Top play</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.bucket}>
+                    <td className="strong">{r.bucket}</td>
+                    <td className="num">{r.plays}</td>
+                    <td>
+                      <RunPassBar run={r.run_pct} pass={r.pass_pct} />
+                    </td>
+                    <td className="num hide-sm">
+                      {r.explosive_pct == null ? "—" : `${r.explosive_pct}%`}
+                    </td>
+                    <td className="num hide-sm">{r.avg_epa ?? "—"}</td>
+                    <td className="hide-sm">{r.top_play}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }
