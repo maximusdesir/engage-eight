@@ -9,39 +9,23 @@ top, from the plays uploaded to the coach's team workspace:
 3. ... that also came out of the same formation (if given)
 4. ... with the same pre-snap motion (if given)
 
-At each level we compare what the opponent actually did with what the model
-(plus the levels above) expected on those same plays, as a log-odds offset,
-and shrink it by n / (n + PRIOR_PLAYS). So a level only adds what the level
-above didn't already explain, a handful of plays only nudges the prediction,
-and a big sample can move it a long way.
+The math lives in ``engage8.blend`` (shared with the backtest that picked
+PRIOR_PLAYS); this module picks the plays for each level and labels the steps.
 """
 from __future__ import annotations
-
-import math
 
 import numpy as np
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 import app.ml  # noqa: F401
+from engage8 import blend as ml_blend  # noqa: E402
 from engage8 import vocab as ml_vocab  # noqa: E402
 from engage8.tendencies import _dd_bucket  # noqa: E402
 
 from app.db.models import Play
 from app.services import prediction_service
 from app.services import vocab as vocab_service
-
-# How many plays the prior (model + levels above) is worth at each level.
-PRIOR_PLAYS = 20.0
-
-
-def _logit(p: float) -> float:
-    p = min(max(p, 1e-4), 1 - 1e-4)
-    return math.log(p / (1 - p))
-
-
-def _sigmoid(x):
-    return 1.0 / (1.0 + np.exp(-x))
 
 
 def _situation(p: Play) -> dict:
@@ -84,7 +68,7 @@ def blend(
 
     name = label or "this opponent"
     y = np.array([1.0 if p.play_type == "pass" else 0.0 for p in plays])
-    base = np.array([_logit(v) for v in prediction_service.predict_many(
+    base = np.array([ml_blend.logit(v) for v in prediction_service.predict_many(
         [_situation(p) for p in plays])])
 
     fmap, mmap = vocab_service.build_maps(db, team_id)
@@ -109,29 +93,16 @@ def blend(
         mask = mask & (play_motion == motion)
         levels.append((f"... with {motion} motion", mask))
 
+    target = ml_blend.logit(model_pass_prob)
     offset = 0.0
-    target = _logit(model_pass_prob)
     steps: list[dict] = []
-    prev_n = None
-    for text, m in levels:
-        n = int(m.sum())
-        if n == 0:
-            break
-        if n == prev_n:
-            # Same plays as the level above: nothing new to learn, and
-            # applying them again would count the same evidence twice.
-            continue
-        prev_n = n
-        k = float(y[m].sum())
-        expected = float(_sigmoid(base[m] + offset).sum())
-        observed_lo = math.log((k + 0.5) / (n - k + 0.5))
-        expected_lo = math.log((expected + 0.5) / (n - expected + 0.5))
-        offset += (n / (n + PRIOR_PLAYS)) * (observed_lo - expected_lo)
+    for i, n, offset in ml_blend.level_offsets(y, base, [m for _, m in levels]):
+        text, m = levels[i]
         steps.append({
             "label": text,
             "plays": n,
-            "pass_rate": round(k / n, 3),
-            "pass_prob_after": round(float(_sigmoid(target + offset)), 3),
+            "pass_rate": round(float(y[m].sum()) / n, 3),
+            "pass_prob_after": round(float(ml_blend.sigmoid(target + offset)), 3),
         })
 
-    return float(_sigmoid(target + offset)), steps
+    return float(ml_blend.sigmoid(target + offset)), steps

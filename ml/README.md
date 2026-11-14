@@ -32,6 +32,9 @@ python -m engage8.predict --down 3 --distance 8 --yardline 45 --quarter 4 --cloc
 
 # 5. Inspect tendencies
 python -m engage8.tendencies --team KC --split down_distance
+
+# 6. Backtest the opponent blend on 2023 (weeks 1-9 as film, predict 10-18)
+python -m engage8.backtest
 ```
 
 ## Bring your own opponent (manual charting)

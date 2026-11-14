@@ -89,6 +89,34 @@ A few decisions behind those numbers:
   leaned on NFL team names, which don't help when you're scouting a high school
   team, so I took them out. Accuracy went up slightly.
 
+### Does the opponent adjustment help?
+
+I tested it on 2023 the way a coach would use it. For each NFL team, weeks 1
+to 9 were the uploaded film, and I predicted weeks 10 to 18 with and without
+the adjustment.
+
+With nine weeks of film it lowers log loss by 0.7% (95% interval 0.1% to
+1.2%, resampling teams), and it helps 21 of 32 teams. That's a small gain, and
+it should be: NFL offenses don't stray far from the league average the model
+already learned.
+
+How hard to pull matters most when there's little film. The adjustment counts
+the model as some number of plays. My first guess was 20, and that made
+predictions worse with two weeks of film. 80 never did, so the app uses 80.
+
+| Film | Plays per team | Counting the model as 20 plays | As 80 plays |
+|---|---|---|---|
+| 1 week | 62 | about even | 0.3% better |
+| 2 weeks | 123 | 0.6% worse | about even |
+| 4 weeks | 233 | 0.1% better | 0.4% better |
+| 9 weeks | 540 | 0.5% better | 0.7% better |
+
+NFL data has no formation or motion, so this only tests the first two steps
+(all of a team's plays, then the same down and distance). A high school team
+probably strays further from an NFL model than any NFL team does, which would
+favor pulling harder. I can't check that until I have high school film.
+Reproduce with `python -m engage8.backtest`.
+
 ## Usage
 
 The trained model is checked in, so you don't have to train anything to try it.
