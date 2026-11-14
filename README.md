@@ -1,5 +1,11 @@
 # Engage Eight
 
+[![CI](https://github.com/maximusdesir/engage-eight/actions/workflows/ci.yml/badge.svg)](https://github.com/maximusdesir/engage-eight/actions/workflows/ci.yml)
+
+**Try it: [engage-eight.pages.dev](https://engage-eight.pages.dev)**. Take the
+quiz or open the demo, no account needed. The server sleeps when nobody's using
+it, so the demo can take up to a minute to start.
+
 <img src="docs/logo.jpg" align="right"
      alt="Engage Eight logo: a blitz play diagram"
      width="120" height="120">
@@ -33,9 +39,10 @@ quarterback lined up, and it moved the call 30 points.
        width="760">
 </p>
 
-The quiz needs no login. It deals ten real 2023 plays the model never trained
-on, you call run or pass, and it shows what happened and what the model said,
-with a running score of you against the model.
+[The quiz](https://engage-eight.pages.dev/quiz) needs no login. It deals ten
+real 2023 plays the model never trained on, you call run or pass, and it shows
+what happened and what the model said, with a running score of you against the
+model.
 
 ## Why I built it
 
@@ -176,10 +183,6 @@ More in [ml/README.md](ml/README.md).
 
 ## What's next
 
-- A quiz mode: see a real NFL situation, call run or pass, and compare yourself
-  to the model.
-- A one-click demo with sample opponent data, hosted somewhere you can just
-  open.
 - Train on high school and college film once I have enough of it. Right now the
   opponent adjustment sits on top of an NFL model.
 

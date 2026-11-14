@@ -27,7 +27,8 @@ export class ApiError extends Error {
 // request still waiting after SLOW_MS marks the server as "waking" until it
 // answers, so the UI can say so instead of looking stuck.
 
-const SLOW_MS = 3000;
+// 4 s, not 3: creating a demo takes ~3 s even when the server is awake.
+const SLOW_MS = 4000;
 let slowRequests = 0;
 const wakingListeners = new Set<() => void>();
 
