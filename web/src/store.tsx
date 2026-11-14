@@ -53,6 +53,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     await api.signup(email, password);
     await login(email, password);
   };
+  const startDemo = async () => {
+    const { team_id } = await api.demo();
+    setUser(await api.me());
+    setTeams(await api.listTeams());
+    setActiveTeamId(team_id);
+  };
   const logout = () => {
     setToken(null);
     setUser(null);
@@ -74,6 +80,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     refreshTeams,
     login,
     signup,
+    startDemo,
     logout,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

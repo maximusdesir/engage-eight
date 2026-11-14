@@ -72,7 +72,13 @@ async function request<T>(path: string, opts: Options = {}): Promise<T> {
 
 // --- Types (mirror the API's Pydantic schemas) -----------------------------
 
-export type User = { id: number; email: string; role: string };
+export type User = { id: number; email: string; role: string; is_demo?: boolean };
+export type DemoSession = {
+  access_token: string;
+  team_id: number;
+  opponent_id: number;
+  opponent_name: string;
+};
 export type Team = { id: number; name: string; level: string; season: number | null };
 
 export type TendencyRow = {
@@ -197,6 +203,16 @@ export const api = {
     );
     setToken(access_token);
     return access_token;
+  },
+
+  // One-click demo: a throwaway account with a team and sample film loaded.
+  demo: async () => {
+    const session = await request<DemoSession>("/auth/demo", {
+      method: "POST",
+      auth: false,
+    });
+    setToken(session.access_token);
+    return session;
   },
 
   me: () => request<User>("/auth/me"),

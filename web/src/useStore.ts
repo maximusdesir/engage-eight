@@ -12,6 +12,7 @@ export type Store = {
   refreshTeams: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
+  startDemo: () => Promise<void>;
   logout: () => void;
 };
 

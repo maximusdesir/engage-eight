@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import SiteNav from "../components/SiteNav";
+import { Picks, RedCard, Reveal } from "../components/CallCard";
 import {
   alignment,
   downAndDistance,
@@ -12,6 +13,7 @@ import {
   type QuizFile,
   type QuizPlay,
 } from "../quiz";
+import "../site.css";
 
 const ROUND = 10;
 type Result = { you: boolean; model: boolean };
@@ -23,6 +25,7 @@ export default function Quiz() {
   const [picked, setPicked] = useState<Call | null>(null);
   const [results, setResults] = useState<Result[]>([]);
   const [summary, setSummary] = useState(false);
+  const top = useRef<HTMLElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -36,30 +39,41 @@ export default function Quiz() {
   }, []);
 
   const play = deck ? deck[pos] : null;
+  // Scores and progress are per round of ten.
+  const inRound = pos % ROUND;
+  const round = results.slice(results.length - (inRound + (picked ? 1 : 0)));
 
   const answer = useCallback(
     (call: Call) => {
-      if (!play || picked) return;
+      if (!play || picked || summary) return;
       setPicked(call);
       setResults((r) => [
         ...r,
         { you: call === play.actual, model: modelCall(play) === play.actual },
       ]);
     },
-    [play, picked]
+    [play, picked, summary]
   );
 
   const next = useCallback(() => {
     if (!deck || !picked) return;
-    if (summary) {
-      setSummary(false);
+    const advance = () => {
       setPos((pos + 1) % deck.length);
       setPicked(null);
+      // On phones the card sits below the situation: bring the new play into view.
+      const el = top.current;
+      if (el && el.getBoundingClientRect().top < 0) {
+        const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        el.scrollIntoView({ behavior: still ? "auto" : "smooth" });
+      }
+    };
+    if (summary) {
+      setSummary(false);
+      advance();
     } else if ((pos + 1) % ROUND === 0) {
       setSummary(true);
     } else {
-      setPos((pos + 1) % deck.length);
-      setPicked(null);
+      advance();
     }
   }, [deck, picked, summary, pos]);
 
@@ -80,93 +94,106 @@ export default function Quiz() {
     return () => window.removeEventListener("keydown", onKey);
   }, [answer, next]);
 
-  const total = (key: keyof Result) => results.filter((r) => r[key]).length;
+  const you = round.filter((r) => r.you).length;
+  const model = round.filter((r) => r.model).length;
 
   return (
-    <div className="quiz-page">
-      <div className="quiz-wrap">
-        <header className="quiz-head">
-          <span className="quiz-logo">Engage Eight</span>
-          <Link to="/">Sign in</Link>
-        </header>
+    <div className="e8">
+      <div className="e8-page">
+        <SiteNav page="quiz" />
 
-        {loadError && (
-          <p className="quiz-msg">Couldn't load the quiz plays. Try refreshing.</p>
-        )}
-        {!deck && !loadError && <p className="quiz-msg">Loading plays…</p>}
+        <section className="panel qz" ref={top}>
+          {loadError && <p className="qz-msg">Couldn't load the quiz plays. Try refreshing.</p>}
+          {!deck && !loadError && <p className="qz-msg">Loading plays…</p>}
 
-        {play && summary && (
-          <RoundSummary results={results.slice(-ROUND)} onNext={next} />
-        )}
-
-        {play && !summary && (
-          <>
-            <div className="quiz-tally">
-              <Tally label="You" right={total("you")} of={results.length} />
-              <span className="quiz-prog">
-                Play {(pos % ROUND) + 1} of {ROUND}
-              </span>
-              <Tally label="Model" right={total("model")} of={results.length} end />
-            </div>
-
-            <section className="quiz-situation">
-              <div className="quiz-down">{downAndDistance(play)}</div>
-              <div className="quiz-at">at {fieldPosition(play)}</div>
-              <dl className="quiz-facts">
-                <Fact label="Clock" value={quarterClock(play)} />
-                <Fact label="Score" value={scoreText(play)} />
-                <Fact label="Timeouts" value={String(play.timeouts)} />
-                <Fact label="Alignment" value={alignment(play)} />
-              </dl>
-              <p className="quiz-match">
-                {play.offense} offense vs {play.defense}, week {play.week}
-              </p>
-            </section>
-
-            {!picked ? (
-              <div className="quiz-buttons">
-                <button className="quiz-btn run" onClick={() => answer("run")}>
-                  Run <kbd>R</kbd>
-                </button>
-                <button className="quiz-btn pass" onClick={() => answer("pass")}>
-                  Pass <kbd>P</kbd>
-                </button>
+          {play && (
+            <>
+              <div className="qz-top">
+                <div>
+                  <div className="qz-count">
+                    Play {inRound + 1} of {ROUND}
+                  </div>
+                  <div className="qz-ticks" aria-hidden="true">
+                    {Array.from({ length: ROUND }, (_, i) => (
+                      <span
+                        key={i}
+                        className={
+                          i < round.length ? (round[i].you ? "right" : "wrong") : i === inRound ? "now" : undefined
+                        }
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="qz-scores" aria-live="polite">
+                  <Score label="You" right={you} of={round.length} />
+                  <Score label="Model" right={model} of={round.length} />
+                </div>
               </div>
-            ) : (
-              <Reveal
-                play={play}
-                picked={picked}
-                onNext={next}
-                last={(pos + 1) % ROUND === 0}
-              />
-            )}
-          </>
-        )}
 
-        <p className="quiz-foot">
-          Real 2023 NFL plays the model never trained on. Scrambles and sacks count
-          as passes. Data from <a href="https://github.com/nflverse">nflverse</a>.
+              <div className="qz-grid">
+                <div>
+                  <div className="chip chip-line">
+                    {play.offense} offense vs {play.defense} · Week {play.week}
+                  </div>
+                  <div className="sit cond">{downAndDistance(play)}</div>
+                  <div className="qz-spot cond">At {fieldPosition(play)}</div>
+                  <dl className="facts">
+                    <Fact label="Clock" value={quarterClock(play)} />
+                    <Fact label="Score" value={scoreText(play)} />
+                    <Fact label="Timeouts" value={String(play.timeouts)} />
+                    <Fact label="Alignment" value={alignment(play)} />
+                  </dl>
+                </div>
+
+                <RedCard title={summary ? "Round over" : "Make the call"} label="Your call">
+                  {summary ? (
+                    <RoundSummary you={you} model={model} onNext={next} />
+                  ) : !picked ? (
+                    <div>
+                      <p className="qz-prompt">
+                        Run or pass? Make your read before you see what happened.
+                      </p>
+                      <Picks onPick={answer} large keys />
+                    </div>
+                  ) : (
+                    <Reveal
+                      key={play.id}
+                      large
+                      picked={picked}
+                      actual={play.actual}
+                      desc={play.desc}
+                      passPct={Math.round(play.model_pass_prob * 100)}
+                      verdict={`The model said ${modelCall(play)} and was ${
+                        modelCall(play) === play.actual ? "right" : "wrong"
+                      }.`}
+                      nextLabel={(pos + 1) % ROUND === 0 ? "See round results" : "Next play"}
+                      onNext={next}
+                    />
+                  )}
+                </RedCard>
+              </div>
+            </>
+          )}
+        </section>
+
+        <p className="qz-foot">
+          Real 2023 NFL plays the model never trained on. Scrambles and sacks count as
+          passes. Data from{" "}
+          <a href="https://github.com/nflverse" target="_blank" rel="noreferrer">
+            nflverse
+          </a>
+          .
         </p>
       </div>
     </div>
   );
 }
 
-function Tally({
-  label,
-  right,
-  of,
-  end,
-}: {
-  label: string;
-  right: number;
-  of: number;
-  end?: boolean;
-}) {
+function Score({ label, right, of }: { label: string; right: number; of: number }) {
   return (
-    <div className={end ? "quiz-tally-side end" : "quiz-tally-side"}>
-      <small>{label}</small>
-      <b>
+    <div>
+      <span>{label}</span>
+      <b className="cond">
         {right}
         <i>/{of}</i>
       </b>
@@ -183,57 +210,9 @@ function Fact({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Reveal({
-  play,
-  picked,
-  onNext,
-  last,
-}: {
-  play: QuizPlay;
-  picked: Call;
-  onNext: () => void;
-  last: boolean;
-}) {
-  const pass = Math.round(play.model_pass_prob * 100);
-  const mc = modelCall(play);
-  const right = picked === play.actual;
-  return (
-    <section className="quiz-reveal">
-      <div className="quiz-result">
-        <span className={right ? "quiz-badge right" : "quiz-badge wrong"}>
-          {right ? "Right" : "Wrong"}
-        </span>
-        You said {picked}.
-      </div>
-      <div className={`quiz-call ${play.actual}`}>{play.actual}.</div>
-      <p className="quiz-desc">{play.desc}</p>
-      <div className="quiz-bar" role="img" aria-label={`Model: ${pass}% pass`}>
-        <i className="run" style={{ width: `${100 - pass}%` }} />
-        <i className="pass" style={{ width: `${pass}%` }} />
-      </div>
-      <div className="quiz-barlabels">
-        <span>Run {100 - pass}%</span>
-        <span>Pass {pass}%</span>
-      </div>
-      <p className="quiz-note">
-        The model said {mc} and was {mc === play.actual ? "right" : "wrong"}.
-      </p>
-      <button className="quiz-btn next" onClick={onNext}>
-        {last ? "See round results" : "Next play"} <kbd>Enter</kbd>
-      </button>
-    </section>
-  );
-}
-
-function RoundSummary({
-  results,
-  onNext,
-}: {
-  results: Result[];
-  onNext: () => void;
-}) {
-  const you = results.filter((r) => r.you).length;
-  const model = results.filter((r) => r.model).length;
+function RoundSummary({ you, model, onNext }: { you: number; model: number; onNext: () => void }) {
+  const next = useRef<HTMLButtonElement>(null);
+  useEffect(() => next.current?.focus({ preventScroll: true }), []);
   const verdict =
     you > model
       ? "You beat the model."
@@ -241,24 +220,26 @@ function RoundSummary({
         ? "A tie with the model."
         : "The model wins this round.";
   return (
-    <section className="quiz-reveal">
-      <div className="quiz-result">Round complete</div>
-      <div className="quiz-final">
+    <div className="rise">
+      <span className="dc-label">Ten plays</span>
+      <div className="dc-final">
         <div>
-          <small>You</small>
-          <b>{you}</b>
+          <span>You</span>
+          <b className="cond">
+            {you}/{ROUND}
+          </b>
         </div>
-        <div className="end">
-          <small>Model</small>
-          <b>{model}</b>
+        <div>
+          <span>Model</span>
+          <b className="cond">
+            {model}/{ROUND}
+          </b>
         </div>
       </div>
-      <p className="quiz-note">
-        Out of {results.length} plays. {verdict}
-      </p>
-      <button className="quiz-btn next" onClick={onNext}>
-        Next round <kbd>Enter</kbd>
+      <p className="dc-note">{verdict} A new round starts with fresh plays.</p>
+      <button ref={next} className="btn btn-next" onClick={onNext} aria-keyshortcuts="Enter">
+        Next round
       </button>
-    </section>
+    </div>
   );
 }
