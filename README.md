@@ -78,6 +78,18 @@ the 2023 season, which the model never saw.
 | Down, distance, clock, score only | 70.5% | 0.785 | 0.181 |
 | Always guess pass | 61.3% | | |
 
+The probabilities mean what they say. Grouped into 10-point bins, the model's
+prediction and the real pass rate are 0.5 points apart on average.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/calibration-dark.png">
+    <img src="docs/calibration.png"
+         alt="Calibration chart for 2023: the model's pass probability against how often teams actually passed, in ten bins. All ten points sit on or within two points of the diagonal; when the model said 75% pass, teams passed 75.5% of the time."
+         width="760">
+  </picture>
+</p>
+
 A few decisions behind those numbers:
 
 - The test set is a whole later season, not a random sample. A random split

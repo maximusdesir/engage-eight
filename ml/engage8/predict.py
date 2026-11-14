@@ -96,6 +96,15 @@ def predict_proba(artifact: dict, situations: list[dict]) -> np.ndarray:
     return np.interp(raw, cal["x"], cal["y"])
 
 
+def predict_frame(artifact: dict, features: pd.DataFrame) -> np.ndarray:
+    """Calibrated pass probability for rows that already hold the model's
+    features (e.g. data/processed/features.parquet). Same numbers as
+    ``predict_proba``, without building one row per situation."""
+    raw = artifact["booster"].predict(features[artifact["features"]].astype("float64"))
+    cal = artifact["calibration"]
+    return np.interp(raw, cal["x"], cal["y"])
+
+
 def predict_situation(artifact: dict, **kw) -> dict:
     p_pass = float(predict_proba(artifact, [kw])[0])
     return summarize(p_pass, _explain(kw, p_pass))

@@ -8,4 +8,5 @@ pyarrow>=14.0          # parquet
 numpy>=1.24
 scikit-learn>=1.3      # calibration, metrics, splits
 lightgbm>=4.0          # gradient boosting model
+matplotlib>=3.8        # calibration chart (engage8/calibration.py)
 pytest>=8.0            # tests
