@@ -46,6 +46,12 @@ each time the API starts.
 `VITE_API_BASE_URL` is baked in at build time. If the API URL changes, start a
 new Pages deployment.
 
+`web/public/_headers` sets the site's security headers, including a
+Content-Security-Policy whose `connect-src` names the API origin
+(`https://engage-eight-api.onrender.com`). If the API URL changes, change it
+there too, or the browser will block every API call (the console says
+"Refused to connect ... Content Security Policy").
+
 ## 4. Connect them
 
 In Render, set `ENGAGE8_CORS_ORIGINS` to the Pages URL as a JSON list, for example
