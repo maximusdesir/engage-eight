@@ -9,6 +9,7 @@ import Tendencies from "./pages/Tendencies";
 import Predict from "./pages/Predict";
 import Vocabulary from "./pages/Vocabulary";
 import Quiz from "./pages/Quiz";
+import ServerWaking from "./components/ServerWaking";
 
 function TeamPicker() {
   const { teams, activeTeam, setActiveTeam } = useStore();
@@ -141,13 +142,15 @@ function Gate() {
 
 export default function App() {
   // The landing page and the quiz are public; the quiz is static JSON and
-  // works even while the hosted API is asleep.
+  // works even while the hosted API is asleep. The landing page's demo button
+  // shows its own cold-start message, so the shared notice is only on the
+  // pages that talk to the API.
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/quiz" element={<Quiz />} />
-      <Route path="/login" element={<LoginRoute />} />
-      <Route path="*" element={<Gate />} />
+      <Route path="/login" element={<><LoginRoute /><ServerWaking /></>} />
+      <Route path="*" element={<><Gate /><ServerWaking /></>} />
     </Routes>
   );
 }
