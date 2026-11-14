@@ -28,13 +28,14 @@ Both are 3rd and 8 from the 45. The only thing that changed is where the
 quarterback lined up, and it moved the call 30 points.
 
 <p align="center">
-  <img src="docs/quiz.svg"
-       alt="The Call it quiz: a 3rd and 6 situation card with Run and Pass buttons, then the reveal showing the actual play and the model's 76% run"
+  <img src="docs/quiz.png"
+       alt="The quiz on 1st and 10 at own 45, Seattle leading by 7 late in the fourth quarter, under center. The player called run and was right: it was a 2-yard Kenneth Walker run, and the model said 87% run. You and the model are both 1 for 1."
        width="760">
 </p>
 
-The quiz needs no login. It deals real 2023 plays the model never trained on,
-you call run or pass, and it shows what happened and what the model said.
+The quiz needs no login. It deals ten real 2023 plays the model never trained
+on, you call run or pass, and it shows what happened and what the model said,
+with a running score of you against the model.
 
 ## Why I built it
 
