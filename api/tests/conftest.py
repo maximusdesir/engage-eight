@@ -22,6 +22,7 @@ _DB_DIR = tempfile.mkdtemp(prefix="engage8-api-tests-")
 os.environ.update({
     "ENGAGE8_DATABASE_URL": f"sqlite:///{_DB_DIR}/test.db",
     "ENGAGE8_DEBUG": "true",
+    "ENGAGE8_JWT_SECRET": "test-secret-" + uuid4().hex + uuid4().hex,
     "ENGAGE8_RATE_LIMIT_ENABLED": "true",
     "ENGAGE8_CLIENT_IP_HEADER": "",
     "ENGAGE8_DEMO_MAX_ACCOUNTS": "1000",

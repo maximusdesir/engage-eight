@@ -51,7 +51,9 @@ def login(
     db: Session = Depends(get_db),
 ) -> Token:
     user = db.scalar(select(User).where(User.email == form.username))
-    if user is None or not verify_password(form.password, user.hashed_password):
+    # verify_password runs bcrypt even when there's no such user, so timing
+    # doesn't reveal which emails have accounts.
+    if not verify_password(form.password, user.hashed_password if user else None):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",

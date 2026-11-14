@@ -24,14 +24,23 @@ without running the ML pipeline. It uses SQLite on disk by default
 ### Configuration and security
 
 - **Fails closed.** `ENGAGE8_DEBUG` defaults to false, and with it false the app
-  refuses to start unless `ENGAGE8_JWT_SECRET` is set. Only set
-  `ENGAGE8_DEBUG=true` locally.
+  refuses to start unless `ENGAGE8_JWT_SECRET` is set to at least 32
+  characters (`openssl rand -hex 32`). Only set `ENGAGE8_DEBUG=true` locally.
+- **Logins** are HS256 JWTs (PyJWT) that last 24 hours. A wrong email and a
+  wrong password take the same time and get the same answer, so the login
+  form doesn't reveal who has an account.
 - **Data isolation.** Every play, upload, opponent, and vocabulary mapping
   belongs to one team, and every team-scoped route checks that you own it
   (others get 404).
 - **Passwords** need at least 10 characters.
+- **Request size.** Bodies over about 5.5 MB are refused with 413 before
+  they're read. Fields are bounded to their database columns (Postgres
+  enforces them; SQLite doesn't), an upload holds at most 20,000 plays, and
+  over-long names in a CSV are trimmed rather than rejected.
 - **Rate limits** per client IP: signup 10/hour, login 10/minute, demo
-  accounts 10/hour, predict and recommend 120/minute, uploads 30/hour. They
+  accounts 10/hour, predict and recommend 120/minute, uploads 30/hour, new
+  teams 30/hour, opponents 60/hour, single plays 600/hour, vocabulary saves
+  120/hour. They
   are in-process, so with several API instances put a shared limiter in front.
   Behind a proxy, set `ENGAGE8_CLIENT_IP_HEADER` to the header it fills with
   the visitor's IP (`cf-connecting-ip` on Render). `X-Forwarded-For` is never

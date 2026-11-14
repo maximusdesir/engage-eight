@@ -7,9 +7,13 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
-from jose import JWTError, jwt
+import jwt
 
 from ..config import settings
+
+# Checked when an email has no account, so a wrong email takes as long as a
+# wrong password and response times don't reveal which emails are registered.
+_DUMMY_HASH = bcrypt.hashpw(b"engage8-timing-equalizer", bcrypt.gensalt()).decode("utf-8")
 
 
 def _to_bytes(plain: str) -> bytes:
@@ -21,11 +25,14 @@ def hash_password(plain: str) -> str:
     return bcrypt.hashpw(_to_bytes(plain), bcrypt.gensalt()).decode("utf-8")
 
 
-def verify_password(plain: str, hashed: str) -> bool:
+def verify_password(plain: str, hashed: str | None) -> bool:
+    """Check a password. ``hashed=None`` (no such user) still spends a bcrypt
+    check, then fails."""
     try:
-        return bcrypt.checkpw(_to_bytes(plain), hashed.encode("utf-8"))
+        ok = bcrypt.checkpw(_to_bytes(plain), (hashed or _DUMMY_HASH).encode("utf-8"))
     except ValueError:
         return False
+    return ok and hashed is not None
 
 
 def create_access_token(subject: str, expires_minutes: int | None = None) -> str:
@@ -39,6 +46,7 @@ def decode_access_token(token: str) -> str | None:
     """Return the subject (user id) if valid, else None."""
     try:
         payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
-        return payload.get("sub")
-    except JWTError:
+    except jwt.InvalidTokenError:
         return None
+    sub = payload.get("sub")
+    return sub if isinstance(sub, str) and sub.isdigit() else None

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.ratelimit import rate_limit
 from app.db.models import Opponent, Team, User
 from app.deps import get_current_user, get_db, get_owned_team
 from app.schemas.team import (
@@ -25,7 +26,12 @@ def list_teams(
     return list(db.scalars(select(Team).where(Team.owner_id == user.id)))
 
 
-@router.post("/teams", response_model=TeamOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/teams",
+    response_model=TeamOut,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(rate_limit("team", 30, 3600))],
+)
 def create_team(
     payload: TeamCreate,
     db: Session = Depends(get_db),
@@ -66,6 +72,7 @@ def list_opponents(
     "/teams/{team_id}/opponents",
     response_model=OpponentOut,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(rate_limit("opponent", 60, 3600))],
 )
 def create_opponent(
     team_id: int,

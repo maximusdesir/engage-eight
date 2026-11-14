@@ -6,7 +6,7 @@ alembic>=1.13                    # migrations
 psycopg[binary]>=3.1             # Postgres driver (ENGAGE8_DATABASE_URL=postgresql+psycopg://...)
 pydantic>=2.6
 pydantic-settings>=2.1
-python-jose[cryptography]>=3.3   # JWT
+PyJWT>=2.8                      # JWT (HS256)
 bcrypt>=4.1                     # password hashing
 python-multipart>=0.0.9          # file uploads
 email-validator>=2.0           # EmailStr validation

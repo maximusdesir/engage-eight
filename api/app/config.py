@@ -17,7 +17,9 @@ PROJECT_ROOT = API_ROOT.parent                          # repo root
 ML_ROOT = PROJECT_ROOT / "ml"
 
 # Placeholder used only for local development. Production must override it.
-INSECURE_DEFAULT_SECRET = "dev-secret-change-me"
+# 32+ characters like a real one, so PyJWT accepts it in development.
+INSECURE_DEFAULT_SECRET = "dev-secret-change-me-dev-secret-change-me"
+MIN_SECRET_LENGTH = 32
 
 
 class Settings(BaseSettings):
@@ -94,10 +96,13 @@ class Settings(BaseSettings):
         With ENGAGE8_DEBUG=false, a real ENGAGE8_JWT_SECRET must be set, or
         anyone who has read the (public) source could forge auth tokens.
         """
-        if not self.debug and self.jwt_secret in ("", INSECURE_DEFAULT_SECRET):
+        weak = (self.jwt_secret in ("", INSECURE_DEFAULT_SECRET, "dev-secret-change-me")
+                or len(self.jwt_secret) < MIN_SECRET_LENGTH)
+        if not self.debug and weak:
             raise ValueError(
-                "ENGAGE8_JWT_SECRET must be set to a strong, unique value when "
-                "ENGAGE8_DEBUG is false. Generate one with: openssl rand -hex 32"
+                f"ENGAGE8_JWT_SECRET must be a strong, unique value of at least "
+                f"{MIN_SECRET_LENGTH} characters when ENGAGE8_DEBUG is false. "
+                "Generate one with: openssl rand -hex 32"
             )
         return self
 
