@@ -1,12 +1,12 @@
 """One-click demo accounts: own data, no password, purged after 24 h, capped."""
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import pytest
 from sqlalchemy import func, select
 
 from app.config import settings
 from app.db.models import Play, Team, User
-from app.services.demo import count_demo_users, purge_demo_users
+from app.services.demo import count_demo_users, purge_demo_users, utc_now
 from conftest import PW
 
 
@@ -63,7 +63,7 @@ def test_purge_keeps_fresh_demos_and_regular_users(client, db, demo, coach):
 
 def test_purge_deletes_old_demos_and_their_data(client, db, demo, coach):
     (d1, h1), (d2, _) = demo(), demo()
-    purged = purge_demo_users(db, now=datetime.utcnow() + timedelta(hours=25))
+    purged = purge_demo_users(db, now=utc_now() + timedelta(hours=25))
     plays_left = db.scalar(select(func.count()).select_from(Play).where(
         Play.team_id.in_([d1["team_id"], d2["team_id"]])))
     assert purged >= 2 and plays_left == 0

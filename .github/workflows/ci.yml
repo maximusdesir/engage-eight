@@ -35,7 +35,7 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: pip install -r api/requirements.txt httpx pytest
+      - run: pip install -r api/requirements.txt httpx2 pytest
       - run: python -m pytest -q
         working-directory: api
       - name: Migrations match the models
