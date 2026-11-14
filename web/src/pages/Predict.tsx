@@ -6,6 +6,7 @@ import {
   type PredictRequest,
   type RecommendResponse,
 } from "../api/client";
+import PageHead from "../components/PageHead";
 
 type Tri = "" | "yes" | "no";
 const triToBool = (v: Tri) => (v === "" ? null : v === "yes");
@@ -17,7 +18,7 @@ const gameSeconds = (quarter: number, quarterSeconds: number) =>
 const pct = (p: number) => `${Math.round(p * 100)}%`;
 
 export default function Predict() {
-  const { activeTeam } = useStore();
+  const { activeTeam, user } = useStore();
   const [down, setDown] = useState(3);
   const [distance, setDistance] = useState(2);
   const [yardline, setYardline] = useState(45);
@@ -31,13 +32,15 @@ export default function Predict() {
   const [formation, setFormation] = useState("");
   const [motion, setMotion] = useState("");
 
+  const [opponents, setOpponents] = useState<string[]>([]);
   const [formations, setFormations] = useState<string[]>([]);
   const [motions, setMotions] = useState<string[]>([]);
   const [result, setResult] = useState<RecommendResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // Formation/motion options come from the active team's canonical vocab.
+  // Formation/motion options come from the active team's canonical vocab;
+  // opponent names are suggested from the team's opponents.
   useEffect(() => {
     if (!activeTeam) return;
     api
@@ -47,7 +50,17 @@ export default function Predict() {
         setMotions(v.canonical.motions);
       })
       .catch(() => {});
-  }, [activeTeam]);
+    api
+      .listOpponents(activeTeam.id)
+      .then((list) => {
+        const names = list.map((o) => o.name);
+        setOpponents(names);
+        // A demo has one sample opponent: fill it in so the blend works on
+        // the first try.
+        if (user?.is_demo && names.length > 0) setOpponent((cur) => cur || names[0]);
+      })
+      .catch(() => {});
+  }, [activeTeam, user?.is_demo]);
 
   const num = (v: string) => (v === "" ? 0 : Number(v));
   const quarterSeconds = Math.min(900, Math.max(0, minutes * 60 + seconds));
@@ -79,7 +92,7 @@ export default function Predict() {
           ? err.status === 503
             ? "Model not found. Run the ml pipeline (python -m engage8.train)."
             : err.message
-          : "Prediction failed"
+          : "Prediction failed."
       );
       setResult(null);
     } finally {
@@ -92,264 +105,263 @@ export default function Predict() {
 
   return (
     <div>
-      <h1>Predict &amp; recommend</h1>
-      <p className="subtitle">
-        Score a pre-snap situation and get suggested defensive calls.
-      </p>
+      <PageHead title="Predict">
+        Set up a pre-snap situation to get the run/pass read and a few
+        defensive calls. Add an opponent to lean on their own film.
+      </PageHead>
 
-      <div className="card">
-        <form className="stack" onSubmit={submit}>
-          <div className="row">
-            <div className="field">
-              <label>Down</label>
-              <select value={down} onChange={(e) => setDown(Number(e.target.value))}>
-                {[1, 2, 3, 4].map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="field">
-              <label>Distance</label>
-              <input
-                type="number"
-                min={1}
-                max={99}
-                value={distance}
-                onChange={(e) => setDistance(num(e.target.value))}
-                style={{ width: 90 }}
-              />
-            </div>
-            <div className="field">
-              <label>Yards to goal</label>
-              <input
-                type="number"
-                min={1}
-                max={99}
-                value={yardline}
-                onChange={(e) => setYardline(num(e.target.value))}
-                style={{ width: 90 }}
-              />
-            </div>
-            <div className="field">
-              <label>Quarter</label>
-              <select
-                value={quarter}
-                onChange={(e) => setQuarter(Number(e.target.value))}
-              >
-                {[1, 2, 3, 4, 5].map((q) => (
-                  <option key={q} value={q}>
-                    {q === 5 ? "OT" : q}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="field">
-              <label>Time left in quarter</label>
-              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+      <form onSubmit={submit}>
+        <section className="card">
+          <h2 className="card-title cond">Situation</h2>
+          <div className="stack">
+            <div className="row">
+              <label className="field">
+                <span>Down</span>
+                <select value={down} onChange={(e) => setDown(Number(e.target.value))}>
+                  {[1, 2, 3, 4].map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="field">
+                <span>Distance</span>
                 <input
+                  className="w-sm"
                   type="number"
-                  min={0}
-                  max={15}
-                  value={minutes}
-                  onChange={(e) => setMinutes(num(e.target.value))}
-                  style={{ width: 60 }}
-                  aria-label="Minutes"
+                  min={1}
+                  max={99}
+                  value={distance}
+                  onChange={(e) => setDistance(num(e.target.value))}
                 />
-                :
+              </label>
+              <label className="field">
+                <span>Yards to goal</span>
                 <input
+                  className="w-sm"
                   type="number"
-                  min={0}
-                  max={59}
-                  value={seconds}
-                  onChange={(e) => setSeconds(num(e.target.value))}
-                  style={{ width: 60 }}
-                  aria-label="Seconds"
+                  min={1}
+                  max={99}
+                  value={yardline}
+                  onChange={(e) => setYardline(num(e.target.value))}
                 />
+              </label>
+              <label className="field">
+                <span>Quarter</span>
+                <select value={quarter} onChange={(e) => setQuarter(Number(e.target.value))}>
+                  {[1, 2, 3, 4, 5].map((q) => (
+                    <option key={q} value={q}>
+                      {q === 5 ? "OT" : q}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="field">
+                <span id="clock-label">Time left in quarter</span>
+                <div className="field-time" role="group" aria-labelledby="clock-label">
+                  <input
+                    className="w-xs"
+                    type="number"
+                    min={0}
+                    max={15}
+                    value={minutes}
+                    onChange={(e) => setMinutes(num(e.target.value))}
+                    aria-label="Minutes"
+                  />
+                  :
+                  <input
+                    className="w-xs"
+                    type="number"
+                    min={0}
+                    max={59}
+                    value={seconds}
+                    onChange={(e) => setSeconds(num(e.target.value))}
+                    aria-label="Seconds"
+                  />
+                </div>
               </div>
+              <label className="field">
+                <span>Score (offense − defense)</span>
+                <input
+                  className="w-sm"
+                  type="number"
+                  value={scoreDiff}
+                  onChange={(e) => setScoreDiff(num(e.target.value))}
+                />
+              </label>
             </div>
-            <div className="field">
-              <label>Score diff (off − def)</label>
-              <input
-                type="number"
-                value={scoreDiff}
-                onChange={(e) => setScoreDiff(num(e.target.value))}
-                style={{ width: 90 }}
-              />
-            </div>
-          </div>
-
-          <div className="row">
-            <div className="field">
-              <label>QB alignment</label>
-              <select
-                value={shotgun}
-                onChange={(e) => setShotgun(e.target.value as Tri)}
-              >
-                <option value="">Unknown</option>
-                <option value="yes">Shotgun / pistol</option>
-                <option value="no">Under center</option>
-              </select>
-            </div>
-            <div className="field">
-              <label>Tempo</label>
-              <select
-                value={noHuddle}
-                onChange={(e) => setNoHuddle(e.target.value as Tri)}
-              >
-                <option value="">Unknown</option>
-                <option value="yes">No huddle</option>
-                <option value="no">Huddled</option>
-              </select>
+            <div className="row">
+              <label className="field">
+                <span>QB alignment</span>
+                <select value={shotgun} onChange={(e) => setShotgun(e.target.value as Tri)}>
+                  <option value="">Unknown</option>
+                  <option value="yes">Shotgun / pistol</option>
+                  <option value="no">Under center</option>
+                </select>
+              </label>
+              <label className="field">
+                <span>Tempo</span>
+                <select value={noHuddle} onChange={(e) => setNoHuddle(e.target.value as Tri)}>
+                  <option value="">Unknown</option>
+                  <option value="yes">No huddle</option>
+                  <option value="no">Huddled</option>
+                </select>
+              </label>
             </div>
           </div>
+        </section>
 
-          <fieldset className="stack" disabled={!activeTeam}>
-            <legend className="muted">
-              Opponent tendencies (optional): blend in plays uploaded for this
-              opponent
+        <section className="card">
+          <h2 className="card-title cond">Opponent</h2>
+          <fieldset disabled={!activeTeam}>
+            <legend>
+              Optional. Blends in the plays you've uploaded for this opponent.
             </legend>
             <div className="row">
-              <div className="field">
-                <label>Opponent label</label>
+              <label className="field">
+                <span>Opponent label</span>
                 <input
+                  list="opponent-names"
                   value={opponent}
                   onChange={(e) => setOpponent(e.target.value)}
                   placeholder="as used on upload, e.g. LINCOLN"
                 />
-              </div>
-              <div className="field">
-                <label>Formation</label>
+                <datalist id="opponent-names">
+                  {opponents.map((o) => (
+                    <option key={o} value={o} />
+                  ))}
+                </datalist>
+              </label>
+              <label className="field">
+                <span>Formation</span>
                 <select
                   value={formation}
                   onChange={(e) => setFormation(e.target.value)}
                   disabled={!opponent.trim()}
                 >
-                  <option value="">(any)</option>
+                  <option value="">Any</option>
                   {formations.map((f) => (
                     <option key={f} value={f}>
                       {f}
                     </option>
                   ))}
                 </select>
-              </div>
-              <div className="field">
-                <label>Motion</label>
+              </label>
+              <label className="field">
+                <span>Motion</span>
                 <select
                   value={motion}
                   onChange={(e) => setMotion(e.target.value)}
                   disabled={!opponent.trim()}
                 >
-                  <option value="">(any)</option>
+                  <option value="">Any</option>
                   {motions.map((m) => (
                     <option key={m} value={m}>
                       {m}
                     </option>
                   ))}
                 </select>
-              </div>
+              </label>
             </div>
             {!activeTeam && (
-              <div className="muted">Select a team to use opponent tendencies.</div>
+              <p className="muted" style={{ marginTop: 12 }}>
+                Pick a team to use opponent tendencies.
+              </p>
             )}
           </fieldset>
-
-          <div>
-            <button disabled={busy}>{busy ? "…" : "Predict"}</button>
-          </div>
-        </form>
-        {error && <div className="error">{error}</div>}
-      </div>
+          <button className="btn btn-light" style={{ marginTop: 22 }} disabled={busy} aria-busy={busy}>
+            {busy ? "Reading the play…" : "Make the call"}
+          </button>
+          {error && <div className="msg error" role="alert">{error}</div>}
+        </section>
+      </form>
 
       {pred && (
-        <div className="card">
-          <div className="row" style={{ alignItems: "center", gap: 40 }}>
+        <section className="card" aria-live="polite">
+          <div className="result">
             <div>
-              <div className="muted">Lean</div>
-              <div
-                className={`big-prob ${pred.lean === "RUN" ? "lean-run" : "lean-pass"}`}
-              >
+              <small>The read</small>
+              <div className={`lean-word cond ${pred.lean === "RUN" ? "lean-run" : "lean-pass"}`}>
                 {pred.lean}
               </div>
             </div>
             <div>
-              <div className="muted">Pass / Run</div>
-              <div style={{ fontSize: 22 }}>
-                <span className="lean-pass">{pct(pred.pass_prob)}</span> /{" "}
-                <span className="lean-run">{pct(pred.run_prob)}</span>
+              <div
+                className="split"
+                role="img"
+                aria-label={`${pct(pred.run_prob)} run, ${pct(pred.pass_prob)} pass`}
+              >
+                <span className="split-run" style={{ width: `${pred.run_prob * 100}%` }} />
+                <span className="split-pass" style={{ width: `${pred.pass_prob * 100}%` }} />
               </div>
+              <div className="split-labels">
+                <span>Run {pct(pred.run_prob)}</span>
+                <span>Pass {pct(pred.pass_prob)}</span>
+              </div>
+              {blended && (
+                <p className="result-model">
+                  League model alone: {pct(pred.model_pass_prob)} pass
+                </p>
+              )}
             </div>
-            {blended && (
-              <div>
-                <div className="muted">League model alone</div>
-                <div style={{ fontSize: 22 }}>{pct(pred.model_pass_prob)} pass</div>
-              </div>
-            )}
           </div>
-          <p className="muted" style={{ marginTop: 12 }}>
-            {pred.why}
-          </p>
+          <p className="why">{pred.why}</p>
           {blended && (
-            <table>
-              <thead>
-                <tr>
-                  <th>Opponent plays used</th>
-                  <th>Plays</th>
-                  <th>Their pass rate</th>
-                  <th>Pass prob. after</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pred.blend.map((s) => (
-                  <tr key={s.label}>
-                    <td>{s.label}</td>
-                    <td>{s.plays}</td>
-                    <td>{pct(s.pass_rate)}</td>
-                    <td>{pct(s.pass_prob_after)}</td>
+            <div className="table-wrap blend">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Opponent plays used</th>
+                    <th className="num">Plays</th>
+                    <th className="num">Their pass rate</th>
+                    <th className="num">Pass after</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {pred.blend.map((s) => (
+                    <tr key={s.label}>
+                      <td>{s.label}</td>
+                      <td className="num">{s.plays}</td>
+                      <td className="num">{pct(s.pass_rate)}</td>
+                      <td className="num">{pct(s.pass_prob_after)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
           {opponent.trim() && !blended && (
-            <p className="muted">
-              No uploaded plays found for “{opponent.trim()}” in this team, so
-              this is the league model only.
+            <p className="muted" style={{ marginTop: 14 }}>
+              No uploaded plays for “{opponent.trim()}” in this team, so this is
+              the league model alone.
             </p>
           )}
-        </div>
+        </section>
       )}
 
       {result && result.recommendations.length > 0 && (
-        <div className="card">
-          <h1 style={{ fontSize: 16 }}>Suggested defensive calls</h1>
-          <p className="muted">{result.basis}</p>
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Front</th>
-                <th>Coverage</th>
-                <th>Pressure</th>
-                <th>Stunt</th>
-                <th>Why</th>
-              </tr>
-            </thead>
-            <tbody>
-              {result.recommendations.map((c, i) => (
-                <tr key={i}>
-                  <td>{i + 1}</td>
-                  <td>{c.front}</td>
-                  <td>{c.coverage}</td>
-                  <td>{c.pressure}</td>
-                  <td>{c.stunt}</td>
-                  <td className="muted">{c.rationale}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <section className="card">
+          <h2 className="card-title cond">Defensive calls</h2>
+          <p className="card-sub">{result.basis}</p>
+          <div className="recs">
+            {result.recommendations.map((c, i) => (
+              <article className="rec" key={i}>
+                <div className="rec-n">Call {i + 1}</div>
+                <div className="rec-front cond">{c.front}</div>
+                <dl>
+                  <dt>Coverage</dt>
+                  <dd>{c.coverage}</dd>
+                  <dt>Pressure</dt>
+                  <dd>{c.pressure}</dd>
+                  <dt>Stunt</dt>
+                  <dd>{c.stunt}</dd>
+                </dl>
+                <p>{c.rationale}</p>
+              </article>
+            ))}
+          </div>
+        </section>
       )}
     </div>
   );

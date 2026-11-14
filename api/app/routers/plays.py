@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.ratelimit import rate_limit
 from app.db.models import Play, Team
 from app.deps import check_opponent, get_db, owned_team
 from app.schemas.team import PlayCreate, PlayOut
@@ -30,7 +31,12 @@ def list_plays(
     return list(db.scalars(stmt))
 
 
-@router.post("/plays", response_model=PlayOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/plays",
+    response_model=PlayOut,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(rate_limit("play", 600, 3600))],
+)
 def create_play(
     payload: PlayCreate,
     team: Team = Depends(owned_team),

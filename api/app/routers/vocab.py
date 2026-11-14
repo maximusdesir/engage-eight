@@ -7,9 +7,12 @@ later: the picker just POSTs a canonical_value.
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from typing import Annotated
+
+from fastapi import APIRouter, Body, Depends
 from sqlalchemy.orm import Session
 
+from app.core.ratelimit import rate_limit
 from app.db.models import User
 from app.deps import get_current_user, get_db, get_owned_team
 from app.schemas.vocab import (
@@ -46,10 +49,14 @@ def get_vocab(
     )
 
 
-@router.post("/teams/{team_id}/vocab", response_model=list[MappingOut])
+@router.post(
+    "/teams/{team_id}/vocab",
+    response_model=list[MappingOut],
+    dependencies=[Depends(rate_limit("vocab", 120, 3600))],
+)
 def set_vocab(
     team_id: int,
-    payload: list[MappingIn],
+    payload: Annotated[list[MappingIn], Body(max_length=500)],
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> list[MappingOut]:

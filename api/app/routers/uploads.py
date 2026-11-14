@@ -6,6 +6,7 @@ plays), and the same file can't be imported twice into a team.
 from __future__ import annotations
 
 import hashlib
+import logging
 import os
 import tempfile
 
@@ -23,6 +24,7 @@ from app.schemas.tendency import UploadSummary
 from app.services import tendencies as tendency_service
 
 router = APIRouter(prefix="/teams/{team_id}", tags=["uploads"])
+log = logging.getLogger(__name__)
 
 # Cap upload size so a single request can't exhaust memory.
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 MB
@@ -59,7 +61,7 @@ def upload_csv(
     content = file.file.read(MAX_UPLOAD_BYTES + 1)
     if len(content) > MAX_UPLOAD_BYTES:
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=413,  # Content Too Large
             detail="File too large (max 5 MB).",
         )
     digest = hashlib.sha256(content).hexdigest()
@@ -76,11 +78,21 @@ def upload_csv(
         )
     except tendency_service.DuplicateUpload as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
-    except Exception as exc:  # noqa: BLE001 - parse errors become a 400
+    except (ValueError, KeyError) as exc:
+        # The CSV readers' own messages (missing columns, bad values, too many
+        # rows) help the coach fix the file, so pass them on.
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Could not read this {source} file: {exc}",
+        ) from exc
+    except Exception as exc:  # noqa: BLE001
+        # Anything else (e.g. a database error) may quote SQL; log it, don't echo it.
+        db.rollback()
+        log.exception("upload failed for team %s", team.id)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Could not save the plays from this file. Check it for unusual values.",
         ) from exc
     finally:
         if tmp_path is not None and os.path.exists(tmp_path):

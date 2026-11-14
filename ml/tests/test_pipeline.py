@@ -226,3 +226,21 @@ def test_motion_tendency_split():
     assert "JET" in set(table["bucket"])          # variant folded to canonical
     for _, r in table.iterrows():
         assert abs(r["run_pct"] + r["pass_pct"] - 100.0) < 0.5
+
+
+def test_batch_scoring_matches_one_at_a_time():
+    """predict_proba builds one frame for many situations; mixing known and
+    unknown values in a batch must not change any single prediction."""
+    from engage8.predict import load_model, predict_proba
+
+    artifact = load_model()
+    situations = [
+        {"down": 3, "distance": 8, "yardline_100": 45, "shotgun": 1},
+        {"down": 1, "distance": 10, "yardline_100": 75, "shotgun": None, "no_huddle": 1},
+        {"down": 4, "distance": 1, "yardline_100": 2, "quarter": 5, "game_seconds_remaining": 300},
+        {"down": 2, "distance": 6, "yardline_100": 95, "score_differential": -14,
+         "posteam_timeouts": 0, "shotgun": 0},
+    ]
+    batch = predict_proba(artifact, situations)
+    singles = [predict_proba(artifact, [s])[0] for s in situations]
+    assert batch.tolist() == singles

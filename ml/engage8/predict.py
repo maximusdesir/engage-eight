@@ -44,8 +44,8 @@ def default_clock(quarter: int) -> int:
     return (4 - quarter) * 900 + 600
 
 
-def _situation_row(features: list[str], **kw) -> pd.DataFrame:
-    """Build a one-row feature frame from a pre-snap situation."""
+def _situation_values(**kw) -> dict:
+    """Feature values for one pre-snap situation (field_zone is added per frame)."""
     down = kw["down"]
     dist = kw["distance"]
     yard = kw["yardline_100"]
@@ -69,12 +69,19 @@ def _situation_row(features: list[str], **kw) -> pd.DataFrame:
         "is_two_minute": int(clock <= 120 or 1680 < clock <= 1800),
         "is_third_and_long": int(down == 3 and dist >= 7),
         "is_short_yardage": int(dist <= 2),
-        "field_zone": int(_field_zone(pd.Series([yard])).iloc[0]),
         # Unknown -> missing; LightGBM routes NaN the way it learned to.
         "shotgun": kw.get("shotgun"),
         "no_huddle": kw.get("no_huddle"),
     }
-    X = pd.DataFrame([{f: row.get(f) for f in features}])
+    return row
+
+
+def _situation_frame(features: list[str], situations: list[dict]) -> pd.DataFrame:
+    """Feature frame for many situations, built in one go (one DataFrame, not
+    one per situation, which made scoring an opponent's film slow)."""
+    X = pd.DataFrame([_situation_values(**kw) for kw in situations])
+    X["field_zone"] = _field_zone(X["yardline_100"]).astype("int64")
+    X = X.reindex(columns=features)
     return X.apply(pd.to_numeric, errors="coerce").astype("float64")
 
 
@@ -87,10 +94,7 @@ def predict_proba(artifact: dict, situations: list[dict]) -> np.ndarray:
     """
     if not situations:
         return np.array([])
-    X = pd.concat(
-        [_situation_row(artifact["features"], **kw) for kw in situations],
-        ignore_index=True,
-    )
+    X = _situation_frame(artifact["features"], situations)
     raw = artifact["booster"].predict(X)
     cal = artifact["calibration"]
     return np.interp(raw, cal["x"], cal["y"])

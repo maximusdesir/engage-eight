@@ -13,8 +13,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
+from .core.bodylimit import BodySizeLimit
 from .db.session import SessionLocal, init_db
 from .routers import auth, plays, predict, teams, tendencies, uploads, vocab
+from .routers.uploads import MAX_UPLOAD_BYTES
 from .services.demo import purge_demo_users
 
 
@@ -28,12 +30,16 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
 
+# Largest upload (5 MB) plus room for the multipart wrapping and form fields.
+app.add_middleware(BodySizeLimit, max_bytes=MAX_UPLOAD_BYTES + 512 * 1024)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    # Auth is a bearer header, never a cookie, so the browser has no reason to
+    # send credentials cross-origin.
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "DELETE"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 

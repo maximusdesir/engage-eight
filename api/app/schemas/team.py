@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class TeamCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     level: Literal["hs", "college", "nfl", "club"] = "hs"
-    season: int | None = None
+    season: int | None = Field(None, ge=1900, le=2100)
 
 
 class TeamOut(BaseModel):
@@ -24,8 +24,8 @@ class TeamOut(BaseModel):
 
 class OpponentCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
-    oc_name: str | None = None
-    notes: str | None = None
+    oc_name: str | None = Field(None, max_length=120)
+    notes: str | None = Field(None, max_length=2000)
 
 
 class OpponentOut(BaseModel):
@@ -50,11 +50,11 @@ class PlayCreate(BaseModel):
     # Optional context.
     opponent_id: int | None = None
     offense_team: str | None = Field(None, max_length=40)
-    defense_team: str | None = None
-    quarter: int | None = None
-    game_seconds_remaining: int | None = None
+    defense_team: str | None = Field(None, max_length=40)
+    quarter: int | None = Field(None, ge=1, le=5)
+    game_seconds_remaining: int | None = Field(None, ge=0, le=3600)
     hash: Literal["L", "M", "R"] | None = None
-    score_differential: int | None = None
+    score_differential: int | None = Field(None, ge=-200, le=200)
     personnel: str | None = Field(None, max_length=4)
     formation: str | None = Field(None, max_length=40)
     motion_type: str | None = Field(None, max_length=40)
@@ -63,7 +63,7 @@ class PlayCreate(BaseModel):
     play_family: str | None = Field(None, max_length=40)
     pass_concept: str | None = Field(None, max_length=40)
     run_concept: str | None = Field(None, max_length=40)
-    result_yards: int | None = None
+    result_yards: int | None = Field(None, ge=-110, le=110)
 
 
 class PlayOut(BaseModel):

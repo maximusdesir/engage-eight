@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { useStore } from "../useStore";
 import { api, ApiError } from "../api/client";
+import PageHead from "../components/PageHead";
+
+const LEVELS: Record<string, string> = {
+  hs: "High school",
+  college: "College",
+  nfl: "NFL",
+  club: "Club",
+};
 
 export default function Teams() {
   const { teams, activeTeam, setActiveTeam, refreshTeams } = useStore();
@@ -20,7 +28,7 @@ export default function Teams() {
       await refreshTeams();
       setActiveTeam(team);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to create team");
+      setError(err instanceof ApiError ? err.message : "Couldn't create the team.");
     } finally {
       setBusy(false);
     }
@@ -28,83 +36,86 @@ export default function Teams() {
 
   return (
     <div>
-      <h1>Teams</h1>
-      <p className="subtitle">
-        A team is your scouting workspace. The active team drives the vocabulary
-        mapping used across screens.
-      </p>
+      <PageHead title="Teams">
+        A team is your scouting workspace: its uploads, plays, and vocabulary
+        are private to you. The active team is the one every screen works on.
+      </PageHead>
 
-      <div className="card">
+      <section className="card">
+        <h2 className="card-title cond">Add a team</h2>
         <form className="row" onSubmit={create}>
-          <div className="field">
-            <label>Name</label>
+          <label className="field">
+            <span>Name</span>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Lincoln HS"
               required
             />
-          </div>
-          <div className="field">
-            <label>Level</label>
+          </label>
+          <label className="field">
+            <span>Level</span>
             <select value={level} onChange={(e) => setLevel(e.target.value)}>
-              <option value="hs">High school</option>
-              <option value="college">College</option>
-              <option value="nfl">NFL</option>
-              <option value="club">Club</option>
+              {Object.entries(LEVELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
             </select>
-          </div>
-          <div className="field">
-            <label>Season</label>
+          </label>
+          <label className="field">
+            <span>Season</span>
             <input
+              className="w-sm"
               type="number"
               value={season}
               onChange={(e) => setSeason(e.target.value)}
-              style={{ width: 100 }}
             />
-          </div>
-          <button disabled={busy}>Add team</button>
+          </label>
+          <button className="btn btn-md btn-light" disabled={busy}>
+            Add team
+          </button>
         </form>
-        {error && <div className="error">{error}</div>}
-      </div>
+        {error && <div className="msg error" role="alert">{error}</div>}
+      </section>
 
-      <div className="card">
+      <section className="card">
+        <h2 className="card-title cond">Your teams</h2>
         {teams.length === 0 ? (
-          <div className="muted">No teams yet. Create one above.</div>
+          <p className="muted">No teams yet. Add one above.</p>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Level</th>
-                <th>Season</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {teams.map((t) => (
-                <tr key={t.id}>
-                  <td>{t.name}</td>
-                  <td>{t.level}</td>
-                  <td>{t.season ?? "—"}</td>
-                  <td>
-                    {activeTeam?.id === t.id ? (
-                      <span className="pill">active</span>
-                    ) : (
-                      <button
-                        className="secondary"
-                        onClick={() => setActiveTeam(t)}
-                      >
-                        Set active
-                      </button>
-                    )}
-                  </td>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Level</th>
+                  <th className="num">Season</th>
+                  <th></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {teams.map((t) => (
+                  <tr key={t.id}>
+                    <td className="strong">{t.name}</td>
+                    <td>{LEVELS[t.level] ?? t.level}</td>
+                    <td className="num">{t.season ?? "—"}</td>
+                    <td className="num">
+                      {activeTeam?.id === t.id ? (
+                        <span className="pill pill-on">Active</span>
+                      ) : (
+                        <button className="btn btn-sm btn-line" onClick={() => setActiveTeam(t)}>
+                          Make active
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }

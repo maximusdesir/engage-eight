@@ -22,6 +22,13 @@ def test_x_forwarded_for_cant_be_the_client_ip_header():
         Settings(debug=True, client_ip_header="X-Forwarded-For")
 
 
-def test_production_refuses_the_placeholder_secret():
+@pytest.mark.parametrize("secret", [
+    "", "dev-secret-change-me", "dev-secret-change-me-dev-secret-change-me", "short-but-random-9f2c",
+])
+def test_production_refuses_weak_secrets(secret):
     with pytest.raises(ValueError):
-        Settings(debug=False, jwt_secret="dev-secret-change-me")
+        Settings(debug=False, jwt_secret=secret)
+
+
+def test_production_accepts_a_long_random_secret():
+    assert Settings(debug=False, jwt_secret="a" * 31 + "b").debug is False

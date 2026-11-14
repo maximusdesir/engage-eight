@@ -8,12 +8,13 @@ type Props = {
   options: string[];
   value: string;
   onChange: (value: string) => void;
+  label: string;
 };
 
-export default function CanonicalPicker({ options, value, onChange }: Props) {
+export default function CanonicalPicker({ options, value, onChange, label }: Props) {
   return (
-    <select value={value} onChange={(e) => onChange(e.target.value)}>
-      <option value="">(choose canonical)</option>
+    <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value)}>
+      <option value="">Choose…</option>
       {options.map((o) => (
         <option key={o} value={o}>
           {o}

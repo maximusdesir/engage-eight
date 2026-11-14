@@ -1,0 +1,5 @@
+# Shared security headers, included by each location in nginx.conf.
+add_header X-Content-Type-Options nosniff always;
+add_header X-Frame-Options DENY always;
+add_header Referrer-Policy strict-origin-when-cross-origin always;
+add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()" always;

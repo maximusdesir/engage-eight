@@ -7,7 +7,7 @@ offline pipeline compute identical numbers. Every function takes the owning
 from __future__ import annotations
 
 import pandas as pd
-from sqlalchemy import select
+from sqlalchemy import String, select
 from sqlalchemy.orm import Session
 
 import app.ml  # noqa: F401  (puts engage8 on sys.path)
@@ -20,6 +20,17 @@ from app.db.models import Play, Upload
 from app.services import vocab as vocab_service
 
 VALID_SOURCES = ("auto", "charting", "hudl")
+
+# A season of film is a few thousand plays; a 5 MB file could hold far more.
+MAX_PLAYS_PER_UPLOAD = 20_000
+
+# Text columns and their lengths. Postgres rejects longer values (SQLite
+# doesn't), so trim on import: a 50-character formation name keeps 40.
+_TEXT_LIMITS = {
+    col.name: col.type.length
+    for col in Play.__table__.columns
+    if isinstance(col.type, String) and col.type.length
+}
 
 
 class DuplicateUpload(Exception):
@@ -148,6 +159,12 @@ def ingest_csv(
             blank = df["offense_team"].isna() | (df["offense_team"].astype(str).str.strip() == "")
             df.loc[blank, "offense_team"] = default_team
 
+    if len(df) > MAX_PLAYS_PER_UPLOAD:
+        raise ValueError(
+            f"{len(df):,} plays is more than one upload can hold "
+            f"({MAX_PLAYS_PER_UPLOAD:,}). Split the file and upload the parts."
+        )
+
     upload = Upload(
         team_id=team_id, opponent_id=opponent_id, filename=filename[:255],
         source=resolved, sha256=sha256, n_plays=len(df),
@@ -160,6 +177,9 @@ def ingest_csv(
         for col in _BOOL_COLUMNS:
             if values[col] is not None:
                 values[col] = bool(values[col])
+        for col, limit in _TEXT_LIMITS.items():
+            if isinstance(values.get(col), str):
+                values[col] = values[col][:limit]
         db.add(Play(team_id=team_id, opponent_id=opponent_id, upload_id=upload.id, **values))
     db.commit()
 

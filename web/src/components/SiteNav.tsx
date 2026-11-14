@@ -1,16 +1,16 @@
-// Top bar shared by the public pages (landing and quiz). On phones it collapses
-// to the red brand mark plus the account button.
+// Top bar shared by the public pages (landing, quiz, sign in). On phones it
+// collapses to the red brand mark plus the account button.
 import { Link } from "react-router-dom";
 import { useStore } from "../useStore";
 
-export default function SiteNav({ page }: { page: "home" | "quiz" }) {
+export default function SiteNav({ page }: { page: "home" | "quiz" | "login" }) {
   const { user } = useStore();
   const ways = page === "home" ? "#ways" : "/#ways";
   return (
     <header className="nav">
       <Link className="nav-mark" to="/" aria-label="Engage Eight home" />
       <nav className="nav-links" aria-label="Main">
-        {page === "quiz" && (
+        {page !== "home" && (
           <Link className="nav-link" to="/">
             Home
           </Link>
@@ -31,12 +31,19 @@ export default function SiteNav({ page }: { page: "home" | "quiz" }) {
             Open the app
           </Link>
         ) : (
-          <Link className="btn btn-sm btn-line" to="/login">
-            Sign in
-          </Link>
+          page !== "login" && (
+            <Link className="btn btn-sm btn-line" to="/login">
+              Sign in
+            </Link>
+          )
         )}
-        {page === "home" && (
-          <Link className="btn btn-sm btn-light nav-quiz" to="/quiz">
+        {page !== "quiz" && (
+          // On phones the landing hero repeats this button, so it hides there;
+          // on the sign-in page it's the only one, so it stays.
+          <Link
+            className={`btn btn-sm btn-light nav-quiz${page === "login" ? " nav-quiz-keep" : ""}`}
+            to="/quiz"
+          >
             Take the quiz
           </Link>
         )}
