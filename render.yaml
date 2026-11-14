@@ -1,0 +1,24 @@
+# Render Blueprint for the Engage Eight API (free web service, Docker).
+# Render dashboard > New > Blueprint > pick this repo. It asks for the two
+# `sync: false` values. Steps and the web half are in docs/deploy.md.
+services:
+  - type: web
+    name: engage-eight-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      # The image listens on 8000; tell Render so it routes there.
+      - key: PORT
+        value: "8000"
+      # Random 256-bit signing key, generated once by Render.
+      - key: ENGAGE8_JWT_SECRET
+        generateValue: true
+      # Neon connection string, pasted as-is (postgresql://...?sslmode=require).
+      - key: ENGAGE8_DATABASE_URL
+        sync: false
+      # JSON list with the web origin, e.g. ["https://engage-eight.pages.dev"]
+      - key: ENGAGE8_CORS_ORIGINS
+        sync: false
