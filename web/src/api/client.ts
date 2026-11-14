@@ -22,6 +22,45 @@ export class ApiError extends Error {
   }
 }
 
+// --- Cold starts -----------------------------------------------------------
+// The hosted API sleeps when idle and can take up to a minute to wake. Any
+// request still waiting after SLOW_MS marks the server as "waking" until it
+// answers, so the UI can say so instead of looking stuck.
+
+const SLOW_MS = 3000;
+let slowRequests = 0;
+const wakingListeners = new Set<() => void>();
+
+function bumpSlow(delta: number) {
+  slowRequests += delta;
+  wakingListeners.forEach((l) => l());
+}
+
+/** For useSyncExternalStore: true while any request has run past SLOW_MS. */
+export const serverWaking = {
+  subscribe(listener: () => void) {
+    wakingListeners.add(listener);
+    return () => {
+      wakingListeners.delete(listener);
+    };
+  },
+  get: () => slowRequests > 0,
+};
+
+async function trackSlow<T>(pending: Promise<T>): Promise<T> {
+  let slow = false;
+  const timer = window.setTimeout(() => {
+    slow = true;
+    bumpSlow(1);
+  }, SLOW_MS);
+  try {
+    return await pending;
+  } finally {
+    window.clearTimeout(timer);
+    if (slow) bumpSlow(-1);
+  }
+}
+
 type Options = {
   method?: string;
   body?: unknown;
@@ -48,11 +87,13 @@ async function request<T>(path: string, opts: Options = {}): Promise<T> {
     body = JSON.stringify(opts.body);
   }
 
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const sent = fetch(`${BASE_URL}${path}`, {
     method: opts.method ?? (body ? "POST" : "GET"),
     headers,
     body,
   });
+  // A big film upload is slow on its own; don't blame the server for it.
+  const res = await (opts.formData ? sent : trackSlow(sent));
 
   if (!res.ok) {
     let detail = res.statusText;
