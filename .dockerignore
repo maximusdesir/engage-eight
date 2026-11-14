@@ -5,6 +5,7 @@
 **/.venv
 ml/data
 ml/tests
+api/tests
 web
 api/*.db
 **/.env
