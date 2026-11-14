@@ -57,7 +57,7 @@ Saving restarts the API.
 In a private window, open the Pages URL:
 
 - Take the quiz. It's static and works even while the API sleeps.
-- Click **Try the demo**. After about 3 seconds the button says "Waking up the
+- Click **Try the demo**. After about 4 seconds the button says "Waking up the
   server…" if the API is cold, then it lands on Tendencies with Central HS loaded.
 - On Predict, run 3rd & 8 from the 45 against Central HS. The result shows the
   opponent blend.
