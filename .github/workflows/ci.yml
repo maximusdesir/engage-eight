@@ -35,8 +35,8 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: pip install -r api/requirements.txt httpx
-      - run: python smoke_test.py
+      - run: pip install -r api/requirements.txt httpx pytest
+      - run: python -m pytest -q
         working-directory: api
       - name: Migrations match the models
         working-directory: api

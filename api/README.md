@@ -96,8 +96,14 @@ api/app/
 migrations/          # Alembic schema migrations
 ```
 
-## Smoke test
+## Tests
 
 ```bash
-python smoke_test.py    # TestClient run over every endpoint, incl. cross-account isolation
+pip install pytest httpx
+python -m pytest        # every endpoint, cross-account isolation, demo, rate limits
 ```
+
+Tests live in `tests/`, one file per area. `tests/conftest.py` points the app
+at a throwaway SQLite database and gives each test its own accounts and teams
+(`coach`, `other_coach`, `team`, `opponent`, `upload`, `demo` fixtures), so any
+test can run on its own: `python -m pytest tests/test_demo.py -k purge`.
