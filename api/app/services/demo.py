@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from sqlalchemy import delete, func, select
@@ -89,9 +89,17 @@ def count_demo_users(db: Session) -> int:
     return db.scalar(select(func.count()).select_from(User).where(User.is_demo.is_(True)))
 
 
+def utc_now() -> datetime:
+    """The current UTC time as a naive datetime, the way ``created_at`` is stored.
+
+    Replaces the deprecated ``datetime.utcnow()`` with the same value.
+    """
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
 def purge_demo_users(db: Session, now: datetime | None = None) -> int:
     """Delete demo users older than ``DEMO_TTL`` with their data; return how many."""
-    cutoff = (now or datetime.utcnow()) - DEMO_TTL
+    cutoff = (now or utc_now()) - DEMO_TTL
     ids = list(db.scalars(
         select(User.id).where(User.is_demo.is_(True), User.created_at < cutoff)
     ))

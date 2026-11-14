@@ -99,7 +99,7 @@ migrations/          # Alembic schema migrations
 ## Tests
 
 ```bash
-pip install pytest httpx
+pip install pytest httpx2   # httpx2: what Starlette's TestClient uses now
 python -m pytest        # every endpoint, cross-account isolation, demo, rate limits
 ```
 
