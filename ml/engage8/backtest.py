@@ -22,7 +22,7 @@ import pandas as pd
 
 from . import config
 from .blend import PRIOR_PLAYS, level_offsets
-from .predict import load_model
+from .predict import load_model, predict_frame
 from .tendencies import _dd_bucket
 
 SEASON = 2023
@@ -68,10 +68,7 @@ def load_season(season: int = SEASON) -> pd.DataFrame:
     df = feats.merge(plays, on=["game_id", "play_id"], how="inner", validate="one_to_one")
     df = df[(df["season"] == season) & (df["week"] <= LAST_REGULAR_WEEK)].copy()
 
-    artifact = load_model()
-    raw = artifact["booster"].predict(df[artifact["features"]].astype("float64"))
-    cal = artifact["calibration"]
-    df["model_p"] = np.clip(np.interp(raw, cal["x"], cal["y"]), P_MIN, 1 - P_MIN)
+    df["model_p"] = np.clip(predict_frame(load_model(), df), P_MIN, 1 - P_MIN)
     df["bucket"] = [_dd_bucket(int(d), int(t)) for d, t in zip(df["down"], df["ydstogo"])]
     df["is_pass"] = df["is_pass"].astype(float)
     return df[["offense_team", "week", "bucket", "is_pass", "model_p"]].reset_index(drop=True)

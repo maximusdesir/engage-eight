@@ -35,6 +35,9 @@ python -m engage8.tendencies --team KC --split down_distance
 
 # 6. Backtest the opponent blend on 2023 (weeks 1-9 as film, predict 10-18)
 python -m engage8.backtest
+
+# 7. Calibration chart for 2023 (writes docs/calibration.png and -dark.png)
+python -m engage8.calibration
 ```
 
 ## Bring your own opponent (manual charting)
