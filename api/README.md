@@ -30,10 +30,15 @@ without running the ML pipeline. It uses SQLite on disk by default
   belongs to one team, and every team-scoped route checks that you own it
   (others get 404).
 - **Passwords** need at least 10 characters.
-- **Rate limits** per client IP: signup 10/hour, login 10/minute, predict and
-  recommend 120/minute, uploads 30/hour. They are in-process, so with several
-  API instances put a shared limiter in front. Set
-  `ENGAGE8_TRUST_PROXY_HEADERS=true` only behind your own proxy.
+- **Rate limits** per client IP: signup 10/hour, login 10/minute, demo
+  accounts 10/hour, predict and recommend 120/minute, uploads 30/hour. They
+  are in-process, so with several API instances put a shared limiter in front.
+  Behind a proxy, set `ENGAGE8_CLIENT_IP_HEADER` to the header it fills with
+  the visitor's IP (`cf-connecting-ip` on Render). `X-Forwarded-For` is never
+  trusted, because clients can forge its first entry.
+- **Demo cap.** At most `ENGAGE8_DEMO_MAX_ACCOUNTS` (default 300) demo
+  accounts exist at once, so the database can't be filled even if the per-IP
+  limit is dodged.
 - **Migrations.** The schema is managed by Alembic (`migrations/`) and upgraded
   on startup. To make a schema change: edit `app/db/models.py`, then
   `alembic revision --autogenerate -m "..."`, review it, and commit it.

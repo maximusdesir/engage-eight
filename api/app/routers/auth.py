@@ -6,6 +6,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.core.ratelimit import rate_limit
 from app.core.security import create_access_token, hash_password, verify_password
 from app.db.models import User
@@ -63,7 +64,10 @@ def login(
     "/demo",
     response_model=DemoSession,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(rate_limit("demo", 10, 3600))],
+    dependencies=[Depends(rate_limit(
+        "demo", 10, 3600,
+        detail="Too many demos from your network. Try again in an hour, or take the quiz.",
+    ))],
 )
 def start_demo(db: Session = Depends(get_db)) -> DemoSession:
     """Create a throwaway account with a team and the fictional Central HS film.
@@ -71,6 +75,11 @@ def start_demo(db: Session = Depends(get_db)) -> DemoSession:
     No credentials needed. The account is purged after 24 hours.
     """
     demo_service.purge_demo_users(db)  # a long-lived process never hits the startup purge
+    if demo_service.count_demo_users(db) >= settings.demo_max_accounts:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="The demo is full for today. Try again tomorrow, or take the quiz.",
+        )
     user, team, opponent = demo_service.create_demo_session(db)
     return DemoSession(
         access_token=create_access_token(str(user.id)),

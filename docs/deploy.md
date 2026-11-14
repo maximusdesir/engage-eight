@@ -63,3 +63,20 @@ In a private window, open the Pages URL:
   opponent blend.
 - If the browser console shows a CORS error, `ENGAGE8_CORS_ORIGINS` doesn't
   exactly match the page's origin (scheme, host, no trailing slash).
+
+Then check that a forged `X-Forwarded-For` can't get around the demo limit
+(10 per hour per visitor). This creates 10 demo accounts, which are deleted
+after 24 hours, and uses up your own demo allowance for an hour:
+
+```
+for i in $(seq 1 12); do
+  curl -s -o /dev/null -w '%{http_code} ' -X POST \
+    -H "X-Forwarded-For: 203.0.113.$i" https://<service>.onrender.com/auth/demo
+done; echo
+```
+
+Expect ten `201`s, then `429 429`. Twelve `201`s means the limit isn't seeing
+your real IP: check that `ENGAGE8_CLIENT_IP_HEADER` is `cf-connecting-ip`.
+Also look at the Render logs: a "client IP header ... is missing" warning means
+the header isn't arriving and every visitor shares one limit. Fix either one
+before sharing the link.

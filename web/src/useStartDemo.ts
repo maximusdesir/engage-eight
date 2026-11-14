@@ -27,9 +27,11 @@ export function useStartDemo() {
       await startDemo();
       navigate("/tendencies");
     } catch (err) {
+      // 429 is either this network's limit or the demo being full; the API's
+      // message says which.
       setError(
         err instanceof ApiError && err.status === 429
-          ? "Too many demos from your network. Try again in an hour, or take the quiz."
+          ? err.message
           : "Couldn't start the demo. Try again in a minute."
       );
     } finally {

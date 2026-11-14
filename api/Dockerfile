@@ -25,4 +25,7 @@ WORKDIR /srv/api
 EXPOSE 8000
 # Migrations run on startup (alembic upgrade head). Fails to start unless
 # ENGAGE8_JWT_SECRET is set (ENGAGE8_DEBUG defaults to false).
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
+# --no-proxy-headers: uvicorn would otherwise take the client IP from the first
+# X-Forwarded-For entry, which the client controls. Rate limits read
+# ENGAGE8_CLIENT_IP_HEADER instead (see render.yaml).
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--no-proxy-headers"]

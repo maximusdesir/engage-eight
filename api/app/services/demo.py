@@ -12,7 +12,7 @@ import secrets
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.config import API_ROOT
@@ -82,6 +82,11 @@ def _delete_users(db: Session, user_ids: list[int]) -> None:
     db.execute(delete(Prediction).where(Prediction.user_id.in_(user_ids)))
     db.execute(delete(User).where(User.id.in_(user_ids)))
     db.commit()
+
+
+def count_demo_users(db: Session) -> int:
+    """How many demo accounts exist (after a purge: those under 24 h old)."""
+    return db.scalar(select(func.count()).select_from(User).where(User.is_demo.is_(True)))
 
 
 def purge_demo_users(db: Session, now: datetime | None = None) -> int:
